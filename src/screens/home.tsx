@@ -5,7 +5,7 @@ import { ScreenNavigationProps } from '../routes'
 import SelectDropdown from 'react-native-select-dropdown'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
-const countries = [
+const tramStops = [
   'St. Peters Square',
   'Chorlton',
   'Old Trafford',
@@ -13,11 +13,18 @@ const countries = [
   'Firswood',
 ]
 
-const urlDict = { 'St. Peters Square': 'st-peters-square-tram', 'Chorlton':'chorlton-tram', 'Old Trafford': 'old-trafford-tram', 'Cornbrook': 'cornbrook-tram', 'Firswood': 'firswood-tram', }
+const urlDict: { [id: string]: string } = {
+  'St. Peters Square': 'st-peters-square-tram',
+  Chorlton: 'chorlton-tram',
+  'Old Trafford': 'old-trafford-tram',
+  Cornbrook: 'cornbrook-tram',
+  Firswood: 'firswood-tram',
+}
 
-function tfgmWebstie(station: string) {
-  console.log(urlDict[station])
-  Linking.openURL('https://tfgm.com/public-transport/tram/stops/'+ urlDict[station]).then()
+async function tfgmWebstie(station: string) {
+  await Linking.openURL(
+    'https://tfgm.com/public-transport/tram/stops/' + urlDict[station]
+  ).then()
 }
 
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
@@ -28,25 +35,20 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       <Button mode="contained" onPress={() => navigation.navigate('Details')}>
         Go to details
       </Button>
-
       <SelectDropdown
-        data={countries}
-        onSelect={(selectedItem: string, index) => {
+        defaultButtonText="Choose a tram stop"
+        data={tramStops}
+        onSelect={(selectedItem: string) => {
           setStation(selectedItem)
-          console.log(selectedItem, index)
         }}
-        buttonTextAfterSelection={(selectedItem: string, index) => {
-          // text represented after item is selected
-          // if data array is an array of objects then return selectedItem.property to render after item is selected
+        buttonTextAfterSelection={(selectedItem: string) => {
           return selectedItem
         }}
-        rowTextForSelection={(item: string, index) => {
-          // text represented for each item in dropdown
-          // if data array is an array of objects then return item.property to represent item in dropdown
+        rowTextForSelection={(item: string) => {
           return item
         }}
       />
-      <Button onPress={() => tfgmWebstie( station )}>Submit</Button>
+      <Button onPress={() => void tfgmWebstie(station)}>Submit</Button>
     </View>
   )
 }
