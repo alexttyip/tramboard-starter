@@ -1,15 +1,14 @@
-import { StyleSheet, View } from 'react-native'
+import { Linking, StyleSheet, View } from "react-native";
 import { Button, Text } from 'react-native-paper'
+import StopsDropDown from '../components/dropDownStops'
 import { ScreenNavigationProps } from '../routes'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
 
 const HomeScreen = ({ navigation }: HomeScreenProps) => (
   <View style={styles.container}>
-    <Text style={styles.text}>Home Screen</Text>
-    <Button mode="contained" onPress={() => navigation.navigate('Details')}>
-      Go to details
-    </Button>
+    <Text style={styles.text}>Tram Times</Text>
+    <StopsDropDown />
   </View>
 )
 
