@@ -1,4 +1,4 @@
-import { Linking, StyleSheet, View } from "react-native";
+import { Linking, StyleSheet, View } from 'react-native'
 import { Button, Text } from 'react-native-paper'
 import StopsDropDown from '../components/dropDownStops'
 import { ScreenNavigationProps } from '../routes'

@@ -1,8 +1,8 @@
-import { Link } from "@react-navigation/native";
+import { Link } from '@react-navigation/native'
 import { StackHeaderProps } from '@react-navigation/stack'
 import { useState } from 'react'
-import { Linking, StyleSheet, View } from "react-native";
-import { Appbar, Button, Text } from "react-native-paper";
+import { Linking, StyleSheet, View } from 'react-native'
+import { Appbar, Button, Text } from 'react-native-paper'
 import { getEqualHitSlop } from '../helpers/hitSlopHelper'
 import DropDown from 'react-native-paper-dropdown'
 
@@ -12,31 +12,31 @@ export default function StopsDropDown() {
   const listOfStops = [
     {
       label: 'Oldham Mumps',
-      value: 'https://tfgm.com/public-transport/tram/stops/oldham-mumps-tram',
+      value: 'oldham-mumps-tram',
     },
     {
       label: 'Peel Hall',
-      value: 'https://tfgm.com/public-transport/tram/stops/peel-hall-tram',
+      value: 'peel-hall-tram',
     },
     {
       label: 'Freehold',
-      value: 'https://tfgm.com/public-transport/tram/stops/freehold-tram',
+      value: 'freehold-tram',
     },
     {
       label: 'Velopark',
-      value: 'https://tfgm.com/public-transport/tram/stops/velopark-tram',
+      value: 'velopark-tram',
     },
     {
       label: 'Anchorage',
-      value: 'https://tfgm.com/public-transport/tram/stops/anchorage-tram',
+      value: 'anchorage-tram',
     },
     {
       label: "Besses o' th' Barn",
-      value: 'https://tfgm.com/public-transport/tram/stops/besses-o-th-barn-tram',
+      value: 'besses-o-th-barn-tram',
     },
     {
       label: 'Wythenshawe Town Centre',
-      value: 'https://tfgm.com/public-transport/tram/stops/wythenshawe-town-centre-tram',
+      value: 'wythenshawe-town-centre-tram',
     },
   ]
   return (
@@ -46,7 +46,6 @@ export default function StopsDropDown() {
       }}
     >
       <DropDown
-
         label={'Stops'}
         mode={'outlined'}
         visible={dropDownVisible}
@@ -60,7 +59,9 @@ export default function StopsDropDown() {
       <Button
         mode="contained"
         onPress={() =>
-          Linking.openURL(stop)
+          Linking.openURL(
+            'https://tfgm.com/public-transport/tram/stops/' + stop
+          )
         }
       >
         Go to details
