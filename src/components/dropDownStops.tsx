@@ -2,17 +2,18 @@ import React, { Dispatch, SetStateAction, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Button, Text } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
+import { Station } from '../screens/home'
 
 type StopsDropDownProps = {
   setResult: Dispatch<SetStateAction<string>>
-  handleResults: (value: Object) => void
+  handleResults: (st: Station) => void
 }
-const listOfStops:{ label: string,  value: string }[] = []
+const listOfStops: { label: string; value: string }[] = []
 function addStopToList(stopName: string) {
-  listOfStops.push({ label: stopName, value:stopName});
+  listOfStops.push({ label: stopName, value: stopName })
 }
 function addListToStopList(stopNames: string[]) {
-  stopNames.sort();
+  stopNames.sort()
   for (const stopName of stopNames) {
     addStopToList(stopName)
   }
@@ -77,7 +78,11 @@ export default function StopsDropDown({
           list={listOfStops}
         />
       </View>
-      <Button mode="contained" onPress={() => handlePress()}>
+      <Button
+        style={stylesDropDown.button}
+        mode="contained"
+        onPress={() => handlePress()}
+      >
         See results
       </Button>
     </View>
@@ -102,5 +107,10 @@ const stylesDropDown = StyleSheet.create({
   },
   dropDown: {
     paddingBottom: 20,
+  },
+  button: {
+    marginBottom: 20,
+    paddingTop: 5,
+    paddingBottom: 5,
   },
 })
