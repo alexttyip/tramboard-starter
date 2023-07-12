@@ -5,28 +5,6 @@ import DropDown from 'react-native-paper-dropdown'
 import { config } from '../config'
 
 const tfgmEndpoint = 'https://api.tfgm.com/odata/Metrolinks'
-const stops = [
-  {
-    label: 'Piccadilly Gardens',
-    value: '9400ZZMAPGD',
-  },
-  {
-    label: 'Firswood',
-    value: '9400ZZMAFIR',
-  },
-  {
-    label: 'Sale Water Park',
-    value: '9400ZZMASWP',
-  },
-  {
-    label: 'Parkway',
-    value: '9400ZZMAPAR',
-  },
-  {
-    label: 'Rochdale Railway Station',
-    value: '9400ZZMARRS',
-  },
-]
 
 type APIType = {
   AtcoCode: string
@@ -46,93 +24,113 @@ type APIType = {
 }[]
 
 type IncomingTram = {
-  Dest: string
-  Wait: string
-  Carriages: string
-  Status: string
+  dest: string
+  wait: string
+  carriages: string
+  status: string
 }
 
-class CollectedStopData {
+class StopData {
   stopName = ''
   incomingTrams: IncomingTram[] = []
 }
-
-// type CollectedStopData = {}
 
 export default function DetailsScreen() {
   const [showDropDown, setShowDropDown] = useState(false)
   const [stop, setStop] = useState('')
   const [incomingTrams, setIncomingTrams] = useState([] as IncomingTram[])
+  const [stopsObtained, setStopsObtained] = useState(
+    [] as { label: string; value: string }[]
+  )
 
-  async function handleClick() {
-    console.log('Clicked')
+  async function getAllStops() {
+    if (stopsObtained.length > 0) {
+      return
+    }
+
+    const stops: { label: string; value: string }[] = []
     const res = await fetch(tfgmEndpoint, {
       method: 'GET',
       headers: {
         'Ocp-Apim-Subscription-Key': config.apiKey,
       },
     })
-    console.log('Received')
     const json = (await res.json()) as { value: APIType }
-    console.log('Converted')
-    const stopsData = filterJson(json.value)
-    console.log('Filtered: ' + stopsData.length.toString())
-    const collectedStopData = collectStopData(stopsData)
-    console.log(
-      'Collected: ' + collectedStopData.incomingTrams.length.toString()
-    )
+    for (const item of json.value) {
+      const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
+      const newStop = { label: item.StationLocation, value: truncAtcoCode }
 
-    setIncomingTrams(collectedStopData.incomingTrams)
+      if (
+        !stops.some((value) => {
+          return value.value === truncAtcoCode
+        })
+      ) {
+        stops.push(newStop)
+      }
+    }
+
+    setStopsObtained(stops)
   }
 
-  function collectStopData(stopsData: APIType): CollectedStopData {
-    /*TODO*/
-    const collectedStopData = new CollectedStopData()
-    if (stopsData.length === 0) {
-      return collectedStopData
+  async function handleClick() {
+    const res = await fetch(tfgmEndpoint, {
+      method: 'GET',
+      headers: {
+        'Ocp-Apim-Subscription-Key': config.apiKey,
+      },
+    })
+    const json = (await res.json()) as { value: APIType }
+    const screenData = filterJson(json.value)
+    const stopData = screenDataToStopData(screenData)
+
+    setIncomingTrams(stopData.incomingTrams)
+  }
+
+  function screenDataToStopData(screenData: APIType): StopData {
+    const stopData = new StopData()
+    if (screenData.length === 0) {
+      return stopData
     }
 
-    collectedStopData.stopName = stopsData[0].StationLocation
-    for (const platformData of stopsData) {
-      collectedStopData.incomingTrams.push({
-        Dest: platformData.Dest0,
-        Wait: platformData.Wait0,
-        Status: platformData.Status0,
-        Carriages: platformData.Carriages0,
+    stopData.stopName = screenData[0].StationLocation
+    for (const platformData of screenData) {
+      stopData.incomingTrams.push({
+        dest: platformData.Dest0,
+        wait: platformData.Wait0,
+        status: platformData.Status0,
+        carriages: platformData.Carriages0,
       })
-      collectedStopData.incomingTrams.push({
-        Dest: platformData.Dest1,
-        Wait: platformData.Wait1,
-        Status: platformData.Status1,
-        Carriages: platformData.Carriages1,
+      stopData.incomingTrams.push({
+        dest: platformData.Dest1,
+        wait: platformData.Wait1,
+        status: platformData.Status1,
+        carriages: platformData.Carriages1,
       })
-      collectedStopData.incomingTrams.push({
-        Dest: platformData.Dest2,
-        Wait: platformData.Wait2,
-        Status: platformData.Status2,
-        Carriages: platformData.Carriages2,
+      stopData.incomingTrams.push({
+        dest: platformData.Dest2,
+        wait: platformData.Wait2,
+        status: platformData.Status2,
+        carriages: platformData.Carriages2,
       })
     }
 
-    collectedStopData.incomingTrams = collectedStopData.incomingTrams.filter(
-      (a) => !(a.Wait === '')
+    stopData.incomingTrams = stopData.incomingTrams.filter(
+      (a) => !(a.wait === '')
     )
 
-    collectedStopData.incomingTrams.sort((a, b) => {
-      if (a.Status === 'Departing') {
+    stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
+
+    stopData.incomingTrams.sort((a, b) => {
+      if (a.status === 'Departing' && b.status === 'Arrived') {
         return -1
       }
-      if (b.Status === 'Departing') {
+      if (b.status === 'Departing' && a.status == 'Arrived') {
         return 1
       }
       return 0
     })
 
-    collectedStopData.incomingTrams.sort(
-      (a, b) => parseInt(a.Wait) - parseInt(b.Wait)
-    )
-
-    return collectedStopData
+    return stopData
   }
 
   function filterJson(json: APIType): APIType {
@@ -146,6 +144,8 @@ export default function DetailsScreen() {
     })
   }
 
+  void getAllStops()
+
   return (
     <View style={styles.container}>
       <DropDown
@@ -156,7 +156,7 @@ export default function DetailsScreen() {
         onDismiss={() => setShowDropDown(false)}
         value={stop}
         setValue={setStop}
-        list={stops}
+        list={stopsObtained}
       />
       <View style={{ padding: '2%' }}></View>
       <Button mode="outlined" onPress={() => void handleClick()}>
@@ -177,14 +177,14 @@ type TramProperty = {
 
 const Tram = ({ tram }: TramProperty) => {
   let waitText: string
-  if (tram.Status === 'Due') {
-    waitText = 'Due in ' + tram.Wait + ' minutes'
+  if (tram.status === 'Due') {
+    waitText = 'Due in ' + tram.wait + ' minutes'
   } else {
-    waitText = tram.Status
+    waitText = tram.status
   }
   return (
     <View style={styles.item}>
-      <Text style={styles.title}>{tram.Dest}</Text>
+      <Text style={styles.title}>{tram.dest}</Text>
       <Text>{waitText}</Text>
     </View>
   )
