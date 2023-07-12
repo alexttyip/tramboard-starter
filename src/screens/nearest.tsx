@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { FlatList, StyleSheet, View, Text } from 'react-native'
+import { LocationObject } from 'expo-location'
+import { useState, useEffect } from 'react'
+import { FlatList, StyleSheet, View, Text, Platform } from 'react-native'
 import { Button } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
+import * as Location from 'expo-location'
 import { config } from '../config'
 
 const tfgmEndpoint = 'https://api.tfgm.com/odata/Metrolinks'
 
-type APIType = {
+type TfGMData = {
   AtcoCode: string
   StationLocation: string
   Dest0: string
@@ -23,6 +25,12 @@ type APIType = {
   Carriages2: string
 }[]
 
+type DfTData = {
+  atcoCode: string
+  longitude: string
+  latitude: string
+}
+
 type IncomingTram = {
   dest: string
   wait: string
@@ -36,8 +44,7 @@ class StopData {
 }
 
 export default function NearestStopScreen() {
-  const [showDropDown, setShowDropDown] = useState(false)
-  const [stop, setStop] = useState('')
+  const [closestStop, setClosestStop] = useState({ name: '', atcoCode: '' })
   const [incomingTrams, setIncomingTrams] = useState([] as IncomingTram[])
   const [stopsObtained, setStopsObtained] = useState(
     [] as { label: string; value: string }[]
@@ -55,7 +62,7 @@ export default function NearestStopScreen() {
         'Ocp-Apim-Subscription-Key': config.apiKey,
       },
     })
-    const json = (await res.json()) as { value: APIType }
+    const json = (await res.json()) as { value: TfGMData }
     for (const item of json.value) {
       const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
       const newStop = { label: item.StationLocation, value: truncAtcoCode }
@@ -72,97 +79,169 @@ export default function NearestStopScreen() {
     setStopsObtained(stops)
   }
 
-  async function handleClick() {
-    const res = await fetch(tfgmEndpoint, {
-      method: 'GET',
-      headers: {
-        'Ocp-Apim-Subscription-Key': config.apiKey,
-      },
-    })
-    const json = (await res.json()) as { value: APIType }
-    const screenData = filterJson(json.value)
-    const stopData = pidDataToStopData(screenData)
-
-    setIncomingTrams(stopData.incomingTrams)
-  }
-
-  function pidDataToStopData(pidData: APIType): StopData {
-    const stopData = new StopData()
-    if (pidData.length === 0) {
-      return stopData
+  async function getNearestStop() {
+    if (closestStop.name !== '') {
+      return
     }
 
-    stopData.stopName = pidData[0].StationLocation
-    for (const platformData of pidData) {
-      stopData.incomingTrams.push({
-        dest: platformData.Dest0,
-        wait: platformData.Wait0,
-        status: platformData.Status0,
-        carriages: platformData.Carriages0,
-      })
-      stopData.incomingTrams.push({
-        dest: platformData.Dest1,
-        wait: platformData.Wait1,
-        status: platformData.Status1,
-        carriages: platformData.Carriages1,
-      })
-      stopData.incomingTrams.push({
-        dest: platformData.Dest2,
-        wait: platformData.Wait2,
-        status: platformData.Status2,
-        carriages: platformData.Carriages2,
-      })
-    }
-
-    stopData.incomingTrams = stopData.incomingTrams.filter(
-      (a) => !(a.wait === '')
+    const res = await fetch(
+      'https://beta-naptan.dft.gov.uk/Download/MultipleLa',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          selectedLasNames: 'Greater Manchester / North West (180)',
+          fileTypeSelect: 'csv',
+        }).toString(),
+      }
     )
-
-    stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
-
-    stopData.incomingTrams.sort((a, b) => {
-      if (a.status === 'Departing' && b.status === 'Arrived') {
-        return -1
-      }
-      if (b.status === 'Departing' && a.status == 'Arrived') {
-        return 1
-      }
-      return 0
-    })
-
-    return stopData
+    const stopDataAsCsvDfT = await res.text()
+    let stopDataDfT = csvToJson(stopDataAsCsvDfT)
+    stopDataDfT = filterDuplicates(stopDataDfT)
   }
 
-  function filterJson(json: APIType): APIType {
+  const [location, setLocation] = useState(null as unknown as LocationObject)
+  const [errorMsg, setErrorMsg] = useState('null')
+
+  useEffect(() => {
+    const effectFunc = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied')
+        return
+      }
+
+      const location = await Location.getCurrentPositionAsync({})
+      setLocation(location)
+    }
+    void effectFunc()
+  }, [])
+
+  let text = 'Waiting..'
+  if (errorMsg) {
+    text = errorMsg
+  } else if (location) {
+    text = JSON.stringify(location)
+    console.log(text)
+  }
+
+  function filterDuplicates(data: DfTData[]): DfTData[] {
     const usedCodes: string[] = []
-    return json.filter((apiStop) => {
-      if (usedCodes.includes(apiStop.AtcoCode)) {
+    return data.filter((stop) => {
+      if (
+        usedCodes.includes(stop.atcoCode.substring(0, stop.atcoCode.length - 1))
+      ) {
         return false
       }
-      usedCodes.push(apiStop.AtcoCode)
-      return apiStop.AtcoCode.includes(stop)
+      usedCodes.push(stop.atcoCode.substring(0, stop.atcoCode.length - 1))
     })
   }
+
+  void getNearestStop()
+
+  function csvToJson(csvData: string): DfTData[] {
+    const json: DfTData[] = []
+    const lines = csvData.split('\n')
+
+    const headers = lines[0].split(',')
+    const longitudeIndex = headers.findIndex((s) => s === 'Longitude')
+    const latitudeIndex = headers.findIndex((s) => s === 'Latitude')
+    const atcoCodeIndex = headers.findIndex((s) => s === 'ATCOCode')
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',')
+      if (!values[atcoCodeIndex].includes('1800ZZ', 0)) {
+        continue
+      }
+
+      json.push({
+        longitude: values[headers.findIndex((s) => s === 'Longitude')],
+        latitude: values[headers.findIndex((s) => s === 'Latitude')],
+        atcoCode: values[headers.findIndex((s) => s === 'ATCOCode')],
+      })
+    }
+    return json
+  }
+
+  // async function handleClick() {
+  //   const res = await fetch(tfgmEndpoint, {
+  //     method: 'GET',
+  //     headers: {
+  //       'Ocp-Apim-Subscription-Key': config.apiKey,
+  //     },
+  //   })
+  //   const json = (await res.json()) as { value: TfGMData }
+  //   const screenData = filterJson(json.value)
+  //   const stopData = pidDataToStopData(screenData)
+  //
+  //   setIncomingTrams(stopData.incomingTrams)
+  // }
+  //
+  // function pidDataToStopData(pidData: TfGMData): StopData {
+  //   const stopData = new StopData()
+  //   if (pidData.length === 0) {
+  //     return stopData
+  //   }
+  //
+  //   stopData.stopName = pidData[0].StationLocation
+  //   for (const platformData of pidData) {
+  //     stopData.incomingTrams.push({
+  //       dest: platformData.Dest0,
+  //       wait: platformData.Wait0,
+  //       status: platformData.Status0,
+  //       carriages: platformData.Carriages0,
+  //     })
+  //     stopData.incomingTrams.push({
+  //       dest: platformData.Dest1,
+  //       wait: platformData.Wait1,
+  //       status: platformData.Status1,
+  //       carriages: platformData.Carriages1,
+  //     })
+  //     stopData.incomingTrams.push({
+  //       dest: platformData.Dest2,
+  //       wait: platformData.Wait2,
+  //       status: platformData.Status2,
+  //       carriages: platformData.Carriages2,
+  //     })
+  //   }
+  //
+  //   stopData.incomingTrams = stopData.incomingTrams.filter(
+  //     (a) => !(a.wait === '')
+  //   )
+  //
+  //   stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
+  //
+  //   stopData.incomingTrams.sort((a, b) => {
+  //     if (a.status === 'Departing' && b.status === 'Arrived') {
+  //       return -1
+  //     }
+  //     if (b.status === 'Departing' && a.status == 'Arrived') {
+  //       return 1
+  //     }
+  //     return 0
+  //   })
+  //
+  //   return stopData
+  // }
+
+  // function filterJson(json: TfGMData): TfGMData {
+  //   const usedCodes: string[] = []
+  //   return json.filter((apiStop) => {
+  //     if (usedCodes.includes(apiStop.AtcoCode)) {
+  //       return false
+  //     }
+  //     usedCodes.push(apiStop.AtcoCode)
+  //     return apiStop.AtcoCode.includes(stop)
+  //   })
+  // }
 
   void getAllStops()
 
   return (
     <View style={styles.container}>
-      <DropDown
-        label={'Stops'}
-        mode={'outlined'}
-        visible={showDropDown}
-        showDropDown={() => setShowDropDown(true)}
-        onDismiss={() => setShowDropDown(false)}
-        value={stop}
-        setValue={setStop}
-        list={stopsObtained}
-      />
-      <View style={{ padding: '2%' }}></View>
-      <Button mode="outlined" onPress={() => void handleClick()}>
-        Find Times
-      </Button>
-
+      <Text>{closestStop.name}</Text>
       <FlatList
         data={incomingTrams}
         renderItem={({ item }) => <Tram tram={item} />}
