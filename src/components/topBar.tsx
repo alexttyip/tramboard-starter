@@ -6,7 +6,7 @@ import { getEqualHitSlop } from '../helpers/hitSlopHelper'
 type TopBarProps = StackHeaderProps
 
 const TopBar = ({ navigation, progress }: TopBarProps) => (
-  <Appbar.Header>
+  <Appbar.Header style={styles.topBar}>
     {progress.previous && (
       <Appbar.BackAction
         style={styles.backButton}
@@ -22,7 +22,12 @@ export default TopBar
 
 const styles = StyleSheet.create({
   title: {
+    fontFamily: 'Avenir',
     alignSelf: 'center',
+    color: 'white',
+  },
+  topBar: {
+    backgroundColor: '#e67300',
   },
   backButton: {
     position: 'absolute',

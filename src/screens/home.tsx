@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { StyleSheet, View, Linking, FlatList } from 'react-native'
 import { Button, Text } from 'react-native-paper'
+import { red50 } from "react-native-paper/lib/typescript/src/styles/themes/v2/colors";
 import * as repl from 'repl'
 import { config } from '../config'
 import { ScreenNavigationProps } from '../routes'
@@ -66,6 +67,21 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     }
   }
 
+  function spacePadString(numString: string) {
+    if (numString.length === 1) {
+      return '  ' + numString
+    } else {
+      return numString
+    }
+  }
+
+  function formatNumber(numString: string) {
+    if (numString === '0') {
+      return '  Due    '
+    }
+    return spacePadString(numString) + ' mins'
+  }
+
   const fetchDataFromTFGMApi = async (station: string) => {
     try {
       const response: Response = await fetch(
@@ -90,30 +106,36 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   }
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Home Screen</Text>
-      <Button mode="contained" onPress={() => navigation.navigate('Details')}>
-        Go to details
-      </Button>
+      {/*<Button mode="contained" onPress={() => navigation.navigate('Details')}>*/}
+      {/*  Go to details*/}
+      {/*</Button>*/}
       <SelectDropdown
         defaultButtonText="Choose a tram stop"
         data={tramStops}
         onSelect={(selectedItem: string) => {
           setStation(selectedItem)
         }}
+        buttonStyle={styles.dropdown}
+        buttonTextStyle={styles.text}
+        rowTextStyle={styles.text}
+        rowStyle={styles.dropdownRow}
+        dropdownOverlayColor={'black'}
+        search={true}
       />
       <Button
         onPress={() => {
           void fetchDataFromTFGMApi(station)
         }}
+        style={styles.buttonStyle}
       >
-        Submit
+        <Text style={styles.textBold}>Submit</Text>
       </Button>
 
       <FlatList
         data={departures}
         renderItem={({ item }) => (
-          <Text>
-            {item.destination} --- {item.time} mins
+          <Text style={styles.text}>
+            {formatNumber(item.time)} --- {item.destination}
           </Text>
         )}
       />
@@ -125,12 +147,37 @@ export default HomeScreen
 
 const styles = StyleSheet.create({
   container: {
+    fontFamily: 'Avenir',
     flex: 1,
-    backgroundColor: '#eee',
+    backgroundColor: '#1a1a1a',
     alignItems: 'center',
     justifyContent: 'center',
+    color: 'white',
   },
   text: {
-    paddingBottom: 24,
+    fontFamily: 'Avenir',
+    color: 'white',
   },
+  textBold: {
+    marginTop: 10,
+    fontFamily: 'Avenir',
+    fontWeight: 'bold',
+    color: 'white',
+    fontSize: 18,
+  },
+  dropdown: {
+    marginTop: 25,
+    fontFamily: 'Avenir',
+    backgroundColor: '#e67300',
+    width: 200,
+    borderRadius: 25,
+    color: 'white',
+  },
+  dropdownRow: {
+    backgroundColor: '#1a1a1a',
+  },
+  buttonStyle: {
+    paddingTop: 10,
+    height: 50,
+  }
 })
