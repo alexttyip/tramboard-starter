@@ -58,9 +58,6 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       for (const obj of json.value) {
         extractDepartureFromApiObject({ jsonObject: obj })
       }
-      const apiForFlatList = liveDepartures.map((stop) => {
-        return { key: stop }
-      })
       liveDepartures.sort((a, b) => (Number(a.time) < Number(b.time) ? -1 : 1))
       setDepartures(liveDepartures)
       return json
@@ -81,7 +78,6 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
           setStation(selectedItem)
         }}
       />
-      {/*<Button onPress={() => void tfgmWebstie(station)}>Submit</Button>*/}
       <Button
         onPress={() => {
           void fetchDataFromTFGMApi(station)
@@ -94,7 +90,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         data={departures}
         renderItem={({ item }) => (
           <Text>
-            {item.destination} --- {item.time}
+            {item.destination} --- {item.time} mins
           </Text>
         )}
       />
