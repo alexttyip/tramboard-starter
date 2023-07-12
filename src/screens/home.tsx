@@ -16,14 +16,16 @@ const tramStops = [
 ]
 
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
-  const [departures, setDepartures] = useState([])
+  const [departures, setDepartures] = useState<
+    { destination: string; time: string }[]
+  >([])
   const [station, setStation] = useState('')
-  const liveDepartures: object[] = []
+  const liveDepartures: { destination: string; time: string }[] = []
   const uniqueCheck: string[] = []
   function extractDepartureFromApiObject({
     jsonObject,
   }: {
-    jsonObject: never
+    jsonObject: TFGMResponse
   }) {
     for (let i = 0; i < 4; i++) {
       if (jsonObject['Wait' + String(i)]) {
@@ -43,6 +45,24 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       }
     }
   }
+
+  interface TFGMResponse {
+    [index: string]: string
+    Dest0: string
+    Dest1: string
+    Dest2: string
+    Dest3: string
+    Wait0: string
+    Wait1: string
+    Wait2: string
+    Wait3: string
+  }
+
+  interface TFGMRawResponse {
+    // [index: string]: string
+    value: TFGMResponse[]
+  }
+
   const fetchDataFromTFGMApi = async (station: string) => {
     try {
       const response: Response = await fetch(
@@ -54,7 +74,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
           },
         }
       )
-      const json = await response.json()
+      const json = (await response.json()) as TFGMRawResponse
       for (const obj of json.value) {
         extractDepartureFromApiObject({ jsonObject: obj })
       }
