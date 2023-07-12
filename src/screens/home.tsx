@@ -7,6 +7,7 @@ import { ScreenNavigationProps } from '../routes'
 import SelectDropdown from 'react-native-select-dropdown'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
+
 const tramStops = [
   "St Peter''s Square",
   'Chorlton',
@@ -15,6 +16,22 @@ const tramStops = [
   'Firswood',
 ]
 
+interface TFGMResponse {
+  [index: string]: string
+  Dest0: string
+  Dest1: string
+  Dest2: string
+  Dest3: string
+  Wait0: string
+  Wait1: string
+  Wait2: string
+  Wait3: string
+}
+
+interface TFGMRawResponse {
+  value: TFGMResponse[]
+}
+
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [departures, setDepartures] = useState<
     { destination: string; time: string }[]
@@ -22,45 +39,31 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [station, setStation] = useState('')
   const liveDepartures: { destination: string; time: string }[] = []
   const uniqueCheck: string[] = []
+
+  function addUniqueDepartureEntry(jsonObject: TFGMResponse, i: number) {
+    if (jsonObject['Wait' + String(i)]) {
+      const destinationTime = {
+        destination: jsonObject['Dest' + String(i)],
+        time: jsonObject['Wait' + String(i)],
+      }
+      const departureString = String(
+        String(jsonObject['Dest' + String(i)] + jsonObject['Wait' + String(i)])
+      )
+      if (!uniqueCheck.includes(departureString)) {
+        liveDepartures.push(destinationTime)
+        uniqueCheck.push(departureString)
+      }
+    }
+  }
+
   function extractDepartureFromApiObject({
     jsonObject,
   }: {
     jsonObject: TFGMResponse
   }) {
     for (let i = 0; i < 4; i++) {
-      if (jsonObject['Wait' + String(i)]) {
-        const destinationTime = {
-          destination: jsonObject['Dest' + String(i)],
-          time: jsonObject['Wait' + String(i)],
-        }
-        const departureString = String(
-          String(
-            jsonObject['Dest' + String(i)] + jsonObject['Wait' + String(i)]
-          )
-        )
-        if (!uniqueCheck.includes(departureString)) {
-          liveDepartures.push(destinationTime)
-          uniqueCheck.push(departureString)
-        }
-      }
+      addUniqueDepartureEntry(jsonObject, i)
     }
-  }
-
-  interface TFGMResponse {
-    [index: string]: string
-    Dest0: string
-    Dest1: string
-    Dest2: string
-    Dest3: string
-    Wait0: string
-    Wait1: string
-    Wait2: string
-    Wait3: string
-  }
-
-  interface TFGMRawResponse {
-    // [index: string]: string
-    value: TFGMResponse[]
   }
 
   const fetchDataFromTFGMApi = async (station: string) => {
