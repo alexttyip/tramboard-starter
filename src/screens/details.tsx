@@ -81,19 +81,19 @@ export default function DetailsScreen() {
     })
     const json = (await res.json()) as { value: APIType }
     const screenData = filterJson(json.value)
-    const stopData = screenDataToStopData(screenData)
+    const stopData = pidDataToStopData(screenData)
 
     setIncomingTrams(stopData.incomingTrams)
   }
 
-  function screenDataToStopData(screenData: APIType): StopData {
+  function pidDataToStopData(pidData: APIType): StopData {
     const stopData = new StopData()
-    if (screenData.length === 0) {
+    if (pidData.length === 0) {
       return stopData
     }
 
-    stopData.stopName = screenData[0].StationLocation
-    for (const platformData of screenData) {
+    stopData.stopName = pidData[0].StationLocation
+    for (const platformData of pidData) {
       stopData.incomingTrams.push({
         dest: platformData.Dest0,
         wait: platformData.Wait0,
