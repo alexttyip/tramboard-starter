@@ -3,7 +3,7 @@ import { Text } from 'react-native-paper'
 
 const DetailsScreen = () => (
   <View style={styles.container}>
-    <Text>Details Screen</Text>
+    <Text>Details</Text>
   </View>
 )
 
