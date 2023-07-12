@@ -27,6 +27,7 @@ module.exports = {
     'linebreak-style': ['error', 'unix'],
     quotes: ['error', 'single'],
     'prettier/prettier': 'error',
+    curly: 2,
   },
   settings: {
     react: {
