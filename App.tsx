@@ -7,6 +7,7 @@ import { config } from './src/config'
 import { RootStackParamList } from './src/routes'
 import DetailsScreen from './src/screens/details'
 import HomeScreen from './src/screens/home'
+import NearestStopScreen from './src/screens/nearest'
 
 // This ensures that a valid dotenv config is pulled before allowing the app to run,
 // helping to avoid unnoticed runtime crashes due to invalid config.
@@ -18,6 +19,7 @@ const Stack = createStackNavigator<RootStackParamList>()
 enum Routes {
   HOME = 'Home',
   DETAILS = 'Details',
+  NEAREST = 'Nearest',
 }
 
 const App = () => (
@@ -31,6 +33,7 @@ const App = () => (
       >
         <Stack.Screen name={Routes.HOME} component={HomeScreen} />
         <Stack.Screen name={Routes.DETAILS} component={DetailsScreen} />
+        <Stack.Screen name={Routes.NEAREST} component={NearestStopScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   </PaperProvider>

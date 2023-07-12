@@ -8,7 +8,10 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => (
   <View style={styles.container}>
     <Text style={styles.text}>Home Screen</Text>
     <Button mode="contained" onPress={() => navigation.navigate('Details')}>
-      Go to details
+      Find Stop Details
+    </Button>
+    <Button mode="contained" onPress={() => navigation.navigate('Nearest')}>
+      Find Your Nearest Stop
     </Button>
   </View>
 )
