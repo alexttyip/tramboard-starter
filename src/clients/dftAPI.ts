@@ -1,8 +1,6 @@
-import { config } from '../config'
-
 const dftEndpoint = 'https://beta-naptan.dft.gov.uk/Download/MultipleLa'
 
-type DfTData = {
+export type DfTData = {
   atcoCode: string
   longitude: string
   latitude: string
