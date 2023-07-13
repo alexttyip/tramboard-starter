@@ -1,47 +1,25 @@
 import { useState } from 'react'
-import { FlatList, StyleSheet, View, Text } from 'react-native'
+import { FlatList, StyleSheet, View } from 'react-native'
 import { Button } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
+import {
+  IncomingTram,
+  pidDataToStopData,
+  tfgmCall,
+  TfGMData,
+} from '../clients/tfgmAPI'
+import TramDetailsBox from '../components/tramDetailsBox'
 import { config } from '../config'
 
 const tfgmEndpoint = 'https://api.tfgm.com/odata/Metrolinks'
 
-type APIType = {
-  AtcoCode: string
-  StationLocation: string
-  Dest0: string
-  Wait0: string
-  Status0: string
-  Carriages0: string
-  Dest1: string
-  Wait1: string
-  Status1: string
-  Carriages1: string
-  Dest2: string
-  Wait2: string
-  Status2: string
-  Carriages2: string
-}[]
-
-type IncomingTram = {
-  dest: string
-  wait: string
-  carriages: string
-  status: string
-}
-
-class StopData {
-  stopName = ''
-  incomingTrams: IncomingTram[] = []
-}
-
 export default function DetailsScreen() {
   const [showDropDown, setShowDropDown] = useState(false)
   const [stop, setStop] = useState('')
-  const [incomingTrams, setIncomingTrams] = useState([] as IncomingTram[])
-  const [stopsObtained, setStopsObtained] = useState(
-    [] as { label: string; value: string }[]
-  )
+  const [incomingTrams, setIncomingTrams] = useState<IncomingTram[]>([])
+  const [stopsObtained, setStopsObtained] = useState<
+    { label: string; value: string }[]
+  >([])
 
   async function getAllStops() {
     if (stopsObtained.length > 0) {
@@ -49,13 +27,7 @@ export default function DetailsScreen() {
     }
 
     const stops: { label: string; value: string }[] = []
-    const res = await fetch(tfgmEndpoint, {
-      method: 'GET',
-      headers: {
-        'Ocp-Apim-Subscription-Key': config.apiKey,
-      },
-    })
-    const json = (await res.json()) as { value: APIType }
+    const json = await tfgmCall()
     for (const item of json.value) {
       const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
       const newStop = { label: item.StationLocation, value: truncAtcoCode }
@@ -79,61 +51,14 @@ export default function DetailsScreen() {
         'Ocp-Apim-Subscription-Key': config.apiKey,
       },
     })
-    const json = (await res.json()) as { value: APIType }
+    const json = (await res.json()) as { value: TfGMData }
     const screenData = filterJson(json.value)
     const stopData = pidDataToStopData(screenData)
 
     setIncomingTrams(stopData.incomingTrams)
   }
 
-  function pidDataToStopData(pidData: APIType): StopData {
-    const stopData = new StopData()
-    if (pidData.length === 0) {
-      return stopData
-    }
-
-    stopData.stopName = pidData[0].StationLocation
-    for (const platformData of pidData) {
-      stopData.incomingTrams.push({
-        dest: platformData.Dest0,
-        wait: platformData.Wait0,
-        status: platformData.Status0,
-        carriages: platformData.Carriages0,
-      })
-      stopData.incomingTrams.push({
-        dest: platformData.Dest1,
-        wait: platformData.Wait1,
-        status: platformData.Status1,
-        carriages: platformData.Carriages1,
-      })
-      stopData.incomingTrams.push({
-        dest: platformData.Dest2,
-        wait: platformData.Wait2,
-        status: platformData.Status2,
-        carriages: platformData.Carriages2,
-      })
-    }
-
-    stopData.incomingTrams = stopData.incomingTrams.filter(
-      (a) => !(a.wait === '')
-    )
-
-    stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
-
-    stopData.incomingTrams.sort((a, b) => {
-      if (a.status === 'Departing' && b.status === 'Arrived') {
-        return -1
-      }
-      if (b.status === 'Departing' && a.status == 'Arrived') {
-        return 1
-      }
-      return 0
-    })
-
-    return stopData
-  }
-
-  function filterJson(json: APIType): APIType {
+  function filterJson(json: TfGMData): TfGMData {
     const usedCodes: string[] = []
     return json.filter((apiStop) => {
       if (usedCodes.includes(apiStop.AtcoCode)) {
@@ -168,27 +93,8 @@ export default function DetailsScreen() {
 
       <FlatList
         data={incomingTrams}
-        renderItem={({ item }) => <Tram tram={item} />}
+        renderItem={({ item }) => <TramDetailsBox tram={item} />}
       />
-    </View>
-  )
-}
-
-type TramProperty = {
-  tram: IncomingTram
-}
-
-const Tram = ({ tram }: TramProperty) => {
-  let waitText: string
-  if (tram.status === 'Due') {
-    waitText = 'Due in ' + tram.wait + ' minutes'
-  } else {
-    waitText = tram.status
-  }
-  return (
-    <View style={styles.item}>
-      <Text style={styles.title}>{tram.dest}</Text>
-      <Text>{waitText}</Text>
     </View>
   )
 }
@@ -199,12 +105,6 @@ const styles = StyleSheet.create({
     width: 300,
     alignSelf: 'center',
     justifyContent: 'center',
-  },
-  item: {
-    backgroundColor: '#ffec44',
-    padding: 20,
-    marginVertical: 8,
-    borderRadius: 20,
   },
   title: {
     fontSize: 24,

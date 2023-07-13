@@ -10,6 +10,7 @@ import {
   IncomingTram,
   pidDataToStopData,
 } from '../clients/tfgmAPI'
+import TramDetailsBox from '../components/tramDetailsBox'
 import { config } from '../config'
 
 type Coordinates = {
@@ -183,27 +184,8 @@ export default function NearestStopScreen() {
       <Text style={styles.title}>{nearestStop.name}</Text>
       <FlatList
         data={incomingTrams}
-        renderItem={({ item }) => <Tram tram={item} />}
+        renderItem={({ item }) => <TramDetailsBox tram={item} />}
       />
-    </View>
-  )
-}
-
-type TramProperty = {
-  tram: IncomingTram
-}
-
-const Tram = ({ tram }: TramProperty) => {
-  let waitText: string
-  if (tram.status === 'Due') {
-    waitText = 'Due in ' + tram.wait + ' minutes'
-  } else {
-    waitText = tram.status
-  }
-  return (
-    <View style={styles.item}>
-      <Text style={styles.title}>{tram.dest}</Text>
-      <Text>{waitText}</Text>
     </View>
   )
 }
@@ -214,12 +196,6 @@ const styles = StyleSheet.create({
     width: 300,
     alignSelf: 'center',
     justifyContent: 'center',
-  },
-  item: {
-    backgroundColor: '#ffec44',
-    padding: 20,
-    marginVertical: 8,
-    borderRadius: 20,
   },
   title: {
     fontSize: 24,

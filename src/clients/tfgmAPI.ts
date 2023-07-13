@@ -74,16 +74,15 @@ export function pidDataToStopData(pidData: TfGMData): StopData {
     (a) => !(a.wait === '')
   )
 
-  stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
-
   stopData.incomingTrams.sort((a, b) => {
-    if (a.status === 'Departing' && b.status === 'Arrived') {
+    if (a.status === 'Departing') {
       return -1
     }
-    if (b.status === 'Departing' && a.status == 'Arrived') {
+    if (b.status === 'Departing') {
       return 1
     }
-    return 0
+
+    return parseInt(a.wait) - parseInt(b.wait)
   })
 
   return stopData
