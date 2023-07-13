@@ -1,7 +1,7 @@
-import { LocationObject } from 'expo-location'
+import { LocationObject, LocationObjectCoords } from 'expo-location'
 import { useState, useEffect } from 'react'
 import { FlatList, StyleSheet, View, Text, Platform } from 'react-native'
-import { Button } from 'react-native-paper'
+import { ActivityIndicator, MD2Colors } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
 import * as Location from 'expo-location'
 import { config } from '../config'
@@ -38,9 +38,22 @@ type IncomingTram = {
   status: string
 }
 
+type Coordinates = {
+  latitude: number
+  longitude: number
+}
+
 class StopData {
   stopName = ''
   incomingTrams: IncomingTram[] = []
+}
+
+function calculateDistance(locationA: Coordinates, locationB: Coordinates) {
+  // Euclidean for now
+  return Math.sqrt(
+    Math.pow(locationA.latitude - locationB.latitude, 2) +
+      Math.pow(locationA.longitude - locationB.longitude, 2)
+  )
 }
 
 export default function NearestStopScreen() {
@@ -49,6 +62,8 @@ export default function NearestStopScreen() {
   const [stopsObtained, setStopsObtained] = useState(
     [] as { label: string; value: string }[]
   )
+  const [location, setLocation] = useState<LocationObject>()
+  const [errorMsg, setErrorMsg] = useState<string>()
 
   async function getAllStops() {
     if (stopsObtained.length > 0) {
@@ -83,6 +98,12 @@ export default function NearestStopScreen() {
     if (closestStop.name !== '') {
       return
     }
+    if (!location) {
+      return
+    }
+    if (stopsObtained.length === 0) {
+      return
+    }
 
     const res = await fetch(
       'https://beta-naptan.dft.gov.uk/Download/MultipleLa',
@@ -100,10 +121,32 @@ export default function NearestStopScreen() {
     const stopDataAsCsvDfT = await res.text()
     let stopDataDfT = csvToJson(stopDataAsCsvDfT)
     stopDataDfT = filterDuplicates(stopDataDfT)
-  }
 
-  const [location, setLocation] = useState(null as unknown as LocationObject)
-  const [errorMsg, setErrorMsg] = useState('null')
+    stopDataDfT.sort((stopA, stopB) => {
+      const stopALocation: Coordinates = {
+        latitude: parseFloat(stopA.latitude),
+        longitude: parseFloat(stopA.longitude),
+      }
+      const stopBLocation: Coordinates = {
+        latitude: parseFloat(stopB.latitude),
+        longitude: parseFloat(stopB.longitude),
+      }
+      return (
+        calculateDistance(stopALocation, location.coords) -
+        calculateDistance(stopBLocation, location.coords)
+      )
+    })
+
+    const platformAtcoCode =
+      '94' +
+      stopDataDfT[0].atcoCode.substring(2, stopDataDfT[0].atcoCode.length - 1)
+
+    const stopName = stopsObtained.filter((stop) => {
+      return platformAtcoCode.includes(stop.value)
+    })
+
+    setClosestStop({ name: stopName[0].label, atcoCode: stopName[0].value })
+  }
 
   useEffect(() => {
     const effectFunc = async () => {
@@ -119,27 +162,19 @@ export default function NearestStopScreen() {
     void effectFunc()
   }, [])
 
-  let text = 'Waiting..'
-  if (errorMsg) {
-    text = errorMsg
-  } else if (location) {
-    text = JSON.stringify(location)
-    console.log(text)
-  }
-
   function filterDuplicates(data: DfTData[]): DfTData[] {
     const usedCodes: string[] = []
     return data.filter((stop) => {
-      if (
-        usedCodes.includes(stop.atcoCode.substring(0, stop.atcoCode.length - 1))
-      ) {
+      if (usedCodes.some((atcoCode) => stop.atcoCode.includes(atcoCode))) {
         return false
       }
       usedCodes.push(stop.atcoCode.substring(0, stop.atcoCode.length - 1))
+      return true
     })
   }
 
   void getNearestStop()
+  void showTrams()
 
   function csvToJson(csvData: string): DfTData[] {
     const json: DfTData[] = []
@@ -165,83 +200,91 @@ export default function NearestStopScreen() {
     return json
   }
 
-  // async function handleClick() {
-  //   const res = await fetch(tfgmEndpoint, {
-  //     method: 'GET',
-  //     headers: {
-  //       'Ocp-Apim-Subscription-Key': config.apiKey,
-  //     },
-  //   })
-  //   const json = (await res.json()) as { value: TfGMData }
-  //   const screenData = filterJson(json.value)
-  //   const stopData = pidDataToStopData(screenData)
-  //
-  //   setIncomingTrams(stopData.incomingTrams)
-  // }
-  //
-  // function pidDataToStopData(pidData: TfGMData): StopData {
-  //   const stopData = new StopData()
-  //   if (pidData.length === 0) {
-  //     return stopData
-  //   }
-  //
-  //   stopData.stopName = pidData[0].StationLocation
-  //   for (const platformData of pidData) {
-  //     stopData.incomingTrams.push({
-  //       dest: platformData.Dest0,
-  //       wait: platformData.Wait0,
-  //       status: platformData.Status0,
-  //       carriages: platformData.Carriages0,
-  //     })
-  //     stopData.incomingTrams.push({
-  //       dest: platformData.Dest1,
-  //       wait: platformData.Wait1,
-  //       status: platformData.Status1,
-  //       carriages: platformData.Carriages1,
-  //     })
-  //     stopData.incomingTrams.push({
-  //       dest: platformData.Dest2,
-  //       wait: platformData.Wait2,
-  //       status: platformData.Status2,
-  //       carriages: platformData.Carriages2,
-  //     })
-  //   }
-  //
-  //   stopData.incomingTrams = stopData.incomingTrams.filter(
-  //     (a) => !(a.wait === '')
-  //   )
-  //
-  //   stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
-  //
-  //   stopData.incomingTrams.sort((a, b) => {
-  //     if (a.status === 'Departing' && b.status === 'Arrived') {
-  //       return -1
-  //     }
-  //     if (b.status === 'Departing' && a.status == 'Arrived') {
-  //       return 1
-  //     }
-  //     return 0
-  //   })
-  //
-  //   return stopData
-  // }
+  async function showTrams() {
+    const res = await fetch(tfgmEndpoint, {
+      method: 'GET',
+      headers: {
+        'Ocp-Apim-Subscription-Key': config.apiKey,
+      },
+    })
+    const json = (await res.json()) as { value: TfGMData }
+    const screenData = filterJson(json.value)
+    const stopData = pidDataToStopData(screenData)
 
-  // function filterJson(json: TfGMData): TfGMData {
-  //   const usedCodes: string[] = []
-  //   return json.filter((apiStop) => {
-  //     if (usedCodes.includes(apiStop.AtcoCode)) {
-  //       return false
-  //     }
-  //     usedCodes.push(apiStop.AtcoCode)
-  //     return apiStop.AtcoCode.includes(stop)
-  //   })
-  // }
+    setIncomingTrams(stopData.incomingTrams)
+  }
+
+  function pidDataToStopData(pidData: TfGMData): StopData {
+    const stopData = new StopData()
+    if (pidData.length === 0) {
+      return stopData
+    }
+
+    stopData.stopName = pidData[0].StationLocation
+    for (const platformData of pidData) {
+      stopData.incomingTrams.push({
+        dest: platformData.Dest0,
+        wait: platformData.Wait0,
+        status: platformData.Status0,
+        carriages: platformData.Carriages0,
+      })
+      stopData.incomingTrams.push({
+        dest: platformData.Dest1,
+        wait: platformData.Wait1,
+        status: platformData.Status1,
+        carriages: platformData.Carriages1,
+      })
+      stopData.incomingTrams.push({
+        dest: platformData.Dest2,
+        wait: platformData.Wait2,
+        status: platformData.Status2,
+        carriages: platformData.Carriages2,
+      })
+    }
+
+    stopData.incomingTrams = stopData.incomingTrams.filter(
+      (a) => !(a.wait === '')
+    )
+
+    stopData.incomingTrams.sort((a, b) => parseInt(a.wait) - parseInt(b.wait))
+
+    stopData.incomingTrams.sort((a, b) => {
+      if (a.status === 'Departing' && b.status === 'Arrived') {
+        return -1
+      }
+      if (b.status === 'Departing' && a.status == 'Arrived') {
+        return 1
+      }
+      return 0
+    })
+
+    return stopData
+  }
+
+  function filterJson(json: TfGMData): TfGMData {
+    const usedCodes: string[] = []
+    return json.filter((apiStop) => {
+      if (usedCodes.includes(apiStop.AtcoCode)) {
+        return false
+      }
+      usedCodes.push(apiStop.AtcoCode)
+      return apiStop.AtcoCode.includes(closestStop.atcoCode)
+    })
+  }
 
   void getAllStops()
 
+  if (closestStop.name === '') {
+    return (
+      <View style={styles.container}>
+        <Text>Finding nearest stop...</Text>
+        <ActivityIndicator animating={true} color={MD2Colors.red800} />
+      </View>
+    )
+  }
   return (
     <View style={styles.container}>
-      <Text>{closestStop.name}</Text>
+      <Text style={styles.title}>{closestStop.name}</Text>
       <FlatList
         data={incomingTrams}
         renderItem={({ item }) => <Tram tram={item} />}
