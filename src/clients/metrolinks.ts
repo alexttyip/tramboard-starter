@@ -10,7 +10,7 @@ const tramStops = [
 
 type TFGMResponse = Record<string, string>
 
-const liveDepartures: { destination: string; time: string }[] = []
+let liveDepartures: { destination: string; time: string }[] = []
 const uniqueCheck: string[] = []
 interface TFGMRawResponse {
   value: TFGMResponse[]
@@ -27,7 +27,7 @@ const fetchDataFromTFGMApi = async (station: string) => {
         },
       }
     )
-    return (await response.json()) as TFGMRawResponse
+    return (await response.json())
   } catch (error) {
     console.error(error)
   }
@@ -40,25 +40,23 @@ const tFGMResponseFromRawData = (rawResponse: TFGMRawResponse) => {
 }
 
 
-liveDepartures.sort((a, b) => (Number(a.time) < Number(b.time) ? -1 : 1))
-setDepartures(liveDepartures)
-return json
-
 function extractDepartureFromApiObject({
   jsonObject,
 }: {
   jsonObject: TFGMResponse
 }) {
   for (let i = 0; i < 4; i++) {
-    const departureTime:{destination: string, time: string}  = getDepartureTimeEntry(jsonObject, i)
-    if (departureIsUnique(departureTime)) {
+    const departureTime:{destination: string, time: string} | undefined = createDepartureObject(jsonObject, i)
+    if (typeof departureTime === 'undefined') {
+      continue
+    }
+    if (isDepartureUnique(departureTime)) {
       liveDepartures.push(departureTime)
-
     }
   }
 }
 
-function departureIsUnique(departureTime: {
+function isDepartureUnique(departureTime: {
   destination: string
   time: string
 }) {
@@ -74,17 +72,7 @@ function departureIsUnique(departureTime: {
 
 
 
-// function rawResponseToDepartureTime(tfGMEntry: TFGMResponse) {
-//   const waitTime = 'Wait' + String(i)
-//   const destStation = 'Dest' + String(i)
-//   if (tfGMEntry[waitTime]) {
-//     const destinationTime = {
-//       destination: tfGMEntry[destStation],
-//       time: tfGMEntry[waitTime],
-//     }
-// }
-
-function getDepartureTimeEntry(jsonObject: TFGMResponse, i: number) {
+function createDepartureObject(jsonObject: TFGMResponse, i: number) : { destination: string; time: string } | undefined {
   const waitTime = 'Wait' + String(i)
   const destStation = 'Dest' + String(i)
   if (jsonObject[waitTime]) {
@@ -93,17 +81,15 @@ function getDepartureTimeEntry(jsonObject: TFGMResponse, i: number) {
       time: jsonObject[waitTime],
     }
     return destinationTime
-    const departureString = String(
-      String(jsonObject[destStation] + jsonObject[waitTime])
-    )
-    if (!uniqueCheck.includes(departureString)) {
-      liveDepartures.push(destinationTime)
-      uniqueCheck.push(departureString)
-    }
   }
 }
 
-export default function departureDataOfStop(station: string) {
-  const rawData = fetchDataFromTFGMApi(station)
-  const tFGMResponseList = tFGMResponseFromRawData(rawData)
+export default async function (station: string) {
+  liveDepartures = []
+  const rawData = await fetchDataFromTFGMApi(station) as TFGMRawResponse
+  tFGMResponseFromRawData(rawData)
+  liveDepartures.sort((a, b) => (Number(a.time) - Number(b.time)))
+  return liveDepartures
 }
+
+

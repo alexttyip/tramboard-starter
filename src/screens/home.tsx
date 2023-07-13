@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { StyleSheet, View, Linking, FlatList } from 'react-native'
+import { StyleSheet, View, FlatList } from 'react-native'
 import { Button, Text } from 'react-native-paper'
-import { red50 } from "react-native-paper/lib/typescript/src/styles/themes/v2/colors";
-import * as repl from 'repl'
-import { config } from '../config'
 import { ScreenNavigationProps } from '../routes'
 import SelectDropdown from 'react-native-select-dropdown'
+import React from 'react'
+import metrolinks from '../clients/metrolinks'
+import { formatNumber } from '../helpers/textFormat'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
 
@@ -17,93 +17,13 @@ const tramStops = [
   'Firswood',
 ]
 
-interface TFGMResponse {
-  [index: string]: string
-  Dest0: string
-  Dest1: string
-  Dest2: string
-  Dest3: string
-  Wait0: string
-  Wait1: string
-  Wait2: string
-  Wait3: string
-}
-
-interface TFGMRawResponse {
-  value: TFGMResponse[]
-}
+let newLiveLocations = []
 
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [departures, setDepartures] = useState<
     { destination: string; time: string }[]
   >([])
   const [station, setStation] = useState('')
-  const liveDepartures: { destination: string; time: string }[] = []
-  const uniqueCheck: string[] = []
-
-  function addUniqueDepartureEntry(jsonObject: TFGMResponse, i: number) {
-    if (jsonObject['Wait' + String(i)]) {
-      const destinationTime = {
-        destination: jsonObject['Dest' + String(i)],
-        time: jsonObject['Wait' + String(i)],
-      }
-      const departureString = String(
-        String(jsonObject['Dest' + String(i)] + jsonObject['Wait' + String(i)])
-      )
-      if (!uniqueCheck.includes(departureString)) {
-        liveDepartures.push(destinationTime)
-        uniqueCheck.push(departureString)
-      }
-    }
-  }
-
-  function extractDepartureFromApiObject({
-    jsonObject,
-  }: {
-    jsonObject: TFGMResponse
-  }) {
-    for (let i = 0; i < 4; i++) {
-      addUniqueDepartureEntry(jsonObject, i)
-    }
-  }
-
-  function spacePadString(numString: string) {
-    if (numString.length === 1) {
-      return '  ' + numString
-    } else {
-      return numString
-    }
-  }
-
-  function formatNumber(numString: string) {
-    if (numString === '0') {
-      return '  Due    '
-    }
-    return spacePadString(numString) + ' mins'
-  }
-
-  const fetchDataFromTFGMApi = async (station: string) => {
-    try {
-      const response: Response = await fetch(
-        `https://api.tfgm.com/odata/Metrolinks?$filter=StationLocation eq '${station}'`,
-        {
-          method: 'GET',
-          headers: {
-            'Ocp-Apim-Subscription-Key': config.apiKey,
-          },
-        }
-      )
-      const json = (await response.json()) as TFGMRawResponse
-      for (const obj of json.value) {
-        extractDepartureFromApiObject({ jsonObject: obj })
-      }
-      liveDepartures.sort((a, b) => (Number(a.time) < Number(b.time) ? -1 : 1))
-      setDepartures(liveDepartures)
-      return json
-    } catch (error) {
-      console.error(error)
-    }
-  }
   return (
     <View style={styles.container}>
       {/*<Button mode="contained" onPress={() => navigation.navigate('Details')}>*/}
@@ -124,7 +44,10 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       />
       <Button
         onPress={() => {
-          void fetchDataFromTFGMApi(station)
+          void (async () => {
+            newLiveLocations = await metrolinks(station)
+            setDepartures(newLiveLocations)
+          })()
         }}
         style={styles.buttonStyle}
       >
@@ -179,5 +102,5 @@ const styles = StyleSheet.create({
   buttonStyle: {
     paddingTop: 10,
     height: 50,
-  }
+  },
 })
