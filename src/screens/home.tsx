@@ -10,7 +10,11 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => (
     <Button mode="contained" onPress={() => navigation.navigate('Details')}>
       Find Stop Details
     </Button>
-    <Button mode="contained" onPress={() => navigation.navigate('Nearest')}>
+    <Button
+      style={styles.button}
+      mode="contained"
+      onPress={() => navigation.navigate('Nearest')}
+    >
       Find Your Nearest Stop
     </Button>
   </View>
@@ -27,5 +31,9 @@ const styles = StyleSheet.create({
   },
   text: {
     paddingBottom: 24,
+    fontSize: 28,
+  },
+  button: {
+    marginTop: 15,
   },
 })

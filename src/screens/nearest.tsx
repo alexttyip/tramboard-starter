@@ -57,6 +57,7 @@ function calculateDistance(locationA: Coordinates, locationB: Coordinates) {
 }
 
 export default function NearestStopScreen() {
+  console.log('Rendering.....')
   const [closestStop, setClosestStop] = useState({ name: '', atcoCode: '' })
   const [incomingTrams, setIncomingTrams] = useState([] as IncomingTram[])
   const [stopsObtained, setStopsObtained] = useState(
@@ -65,10 +66,25 @@ export default function NearestStopScreen() {
   const [location, setLocation] = useState<LocationObject>()
   const [errorMsg, setErrorMsg] = useState<string>()
 
+  useEffect(() => {
+    const effectFunc = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync()
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied')
+        return
+      }
+
+      const location = await Location.getCurrentPositionAsync({})
+      setLocation(location)
+    }
+    void effectFunc()
+  }, [])
+
   async function getAllStops() {
     if (stopsObtained.length > 0) {
       return
     }
+    console.log('Running getAllStops')
 
     const stops: { label: string; value: string }[] = []
     const res = await fetch(tfgmEndpoint, {
@@ -104,6 +120,7 @@ export default function NearestStopScreen() {
     if (stopsObtained.length === 0) {
       return
     }
+    console.log('Running getNearestStop')
 
     const res = await fetch(
       'https://beta-naptan.dft.gov.uk/Download/MultipleLa',
@@ -148,21 +165,8 @@ export default function NearestStopScreen() {
     setClosestStop({ name: stopName[0].label, atcoCode: stopName[0].value })
   }
 
-  useEffect(() => {
-    const effectFunc = async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied')
-        return
-      }
-
-      const location = await Location.getCurrentPositionAsync({})
-      setLocation(location)
-    }
-    void effectFunc()
-  }, [])
-
   function filterDuplicates(data: DfTData[]): DfTData[] {
+    console.log('Running filterDuplicates')
     const usedCodes: string[] = []
     return data.filter((stop) => {
       if (usedCodes.some((atcoCode) => stop.atcoCode.includes(atcoCode))) {
@@ -173,10 +177,8 @@ export default function NearestStopScreen() {
     })
   }
 
-  void getNearestStop()
-  void showTrams()
-
   function csvToJson(csvData: string): DfTData[] {
+    console.log('Running csvToJson')
     const json: DfTData[] = []
     const lines = csvData.split('\n')
 
@@ -192,15 +194,19 @@ export default function NearestStopScreen() {
       }
 
       json.push({
-        longitude: values[headers.findIndex((s) => s === 'Longitude')],
-        latitude: values[headers.findIndex((s) => s === 'Latitude')],
-        atcoCode: values[headers.findIndex((s) => s === 'ATCOCode')],
+        longitude: values[longitudeIndex],
+        latitude: values[latitudeIndex],
+        atcoCode: values[atcoCodeIndex],
       })
     }
     return json
   }
 
   async function showTrams() {
+    if (incomingTrams.length > 0) {
+      return
+    }
+    console.log('Running showTrams')
     const res = await fetch(tfgmEndpoint, {
       method: 'GET',
       headers: {
@@ -215,6 +221,7 @@ export default function NearestStopScreen() {
   }
 
   function pidDataToStopData(pidData: TfGMData): StopData {
+    console.log('Running pidDataToStopData')
     const stopData = new StopData()
     if (pidData.length === 0) {
       return stopData
@@ -262,6 +269,7 @@ export default function NearestStopScreen() {
   }
 
   function filterJson(json: TfGMData): TfGMData {
+    console.log('Running filterJson')
     const usedCodes: string[] = []
     return json.filter((apiStop) => {
       if (usedCodes.includes(apiStop.AtcoCode)) {
@@ -272,6 +280,8 @@ export default function NearestStopScreen() {
     })
   }
 
+  void getNearestStop()
+  void showTrams()
   void getAllStops()
 
   if (closestStop.name === '') {
