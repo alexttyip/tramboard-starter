@@ -4,18 +4,11 @@ import { Button, Text } from 'react-native-paper'
 import { ScreenNavigationProps } from '../routes'
 import SelectDropdown from 'react-native-select-dropdown'
 import React from 'react'
-import metrolinks from '../clients/metrolinks'
+import departuresFromStation from '../clients/departuresFromStation'
 import { formatNumber } from '../helpers/textFormat'
+import { stationNameListFromTFGMApi } from '../clients/departuresFromStation'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
-
-const tramStops = [
-  "St Peter''s Square",
-  'Chorlton',
-  'Old Trafford',
-  'Cornbrook',
-  'Firswood',
-]
 
 let newLiveLocations = []
 
@@ -24,6 +17,8 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     { destination: string; time: string }[]
   >([])
   const [station, setStation] = useState('')
+  const [stationList, setStationList] = useState<string[]>([])
+
   return (
     <View style={styles.container}>
       {/*<Button mode="contained" onPress={() => navigation.navigate('Details')}>*/}
@@ -31,7 +26,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       {/*</Button>*/}
       <SelectDropdown
         defaultButtonText="Choose a tram stop"
-        data={tramStops}
+        data={stationList}
         onSelect={(selectedItem: string) => {
           setStation(selectedItem)
         }}
@@ -41,11 +36,16 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         rowStyle={styles.dropdownRow}
         dropdownOverlayColor={'black'}
         search={true}
+        onFocus={() => {
+          void (async () => {
+            setStationList(await stationNameListFromTFGMApi())
+          })()
+        }}
       />
       <Button
         onPress={() => {
           void (async () => {
-            newLiveLocations = await metrolinks(station)
+            newLiveLocations = await departuresFromStation(station)
             setDepartures(newLiveLocations)
           })()
         }}
