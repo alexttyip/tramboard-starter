@@ -7,6 +7,8 @@ import { Station } from '../screens/home'
 type StopsDropDownProps = {
   setResult: Dispatch<SetStateAction<string>>
   handleResults: (st: Station) => void
+  setStation:React.Dispatch<React.SetStateAction<string>>
+  setStopsDropDownVisible:React.Dispatch<React.SetStateAction<boolean>>
 }
 const listOfStops: { label: string; value: string }[] = []
 function addStopToList(stopName: string) {
@@ -34,11 +36,15 @@ addListToStopList(stopNames)
 export default function StopsDropDown({
   setResult,
   handleResults,
+  setStation,
+  setStopsDropDownVisible,
 }: StopsDropDownProps) {
   const [dropDownVisible, setDropDownVisible] = useState(true)
   const [stop, setStop] = useState('')
 
   function handlePress() {
+    setStation(stop)
+    setStopsDropDownVisible(false);
     const filter: string = "?$filter=StationLocation eq '" + stop + "'"
     const query = 'https://api.tfgm.com/odata/Metrolinks' + filter
     void fetch(query, {
