@@ -158,8 +158,11 @@ export default function DetailsScreen() {
         setValue={setStop}
         list={stopsObtained}
       />
-      <View style={{ padding: '2%' }}></View>
-      <Button mode="outlined" onPress={() => void handleClick()}>
+      <Button
+        style={{ marginTop: 15 }}
+        mode="outlined"
+        onPress={() => void handleClick()}
+      >
         Find Times
       </Button>
 
