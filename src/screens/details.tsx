@@ -3,15 +3,13 @@ import { FlatList, StyleSheet, View } from 'react-native'
 import { Button } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
 import {
+  getAllStops,
   IncomingTram,
   pidDataToStopData,
   tfgmCall,
   TfGMData,
 } from '../clients/tfgmAPI'
 import TramDetailsBox from '../components/tramDetailsBox'
-import { config } from '../config'
-
-const tfgmEndpoint = 'https://api.tfgm.com/odata/Metrolinks'
 
 export default function DetailsScreen() {
   const [showDropDown, setShowDropDown] = useState(false)
@@ -21,37 +19,8 @@ export default function DetailsScreen() {
     { label: string; value: string }[]
   >([])
 
-  async function getAllStops() {
-    if (stopsObtained.length > 0) {
-      return
-    }
-
-    const stops: { label: string; value: string }[] = []
-    const json = await tfgmCall()
-    for (const item of json.value) {
-      const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
-      const newStop = { label: item.StationLocation, value: truncAtcoCode }
-
-      if (
-        !stops.some((value) => {
-          return value.value === truncAtcoCode
-        })
-      ) {
-        stops.push(newStop)
-      }
-    }
-
-    setStopsObtained(stops)
-  }
-
   async function handleClick() {
-    const res = await fetch(tfgmEndpoint, {
-      method: 'GET',
-      headers: {
-        'Ocp-Apim-Subscription-Key': config.apiKey,
-      },
-    })
-    const json = (await res.json()) as { value: TfGMData }
+    const json = await tfgmCall()
     const screenData = filterJson(json.value)
     const stopData = pidDataToStopData(screenData)
 
@@ -70,7 +39,12 @@ export default function DetailsScreen() {
   }
 
   useEffect(() => {
-    void getAllStops()
+    async function effectFunc() {
+      const stops = await getAllStops()
+      setStopsObtained(stops)
+    }
+
+    void effectFunc()
   }, [])
 
   return (

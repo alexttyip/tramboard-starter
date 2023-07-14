@@ -19,9 +19,9 @@ export type TfGMData = {
   Carriages2: string
 }[]
 
-class StopData {
-  stopName = ''
-  incomingTrams: IncomingTram[] = []
+type StopData = {
+  stopName: string
+  incomingTrams: IncomingTram[]
 }
 
 export type IncomingTram = {
@@ -43,36 +43,41 @@ export async function tfgmCall() {
 
 export function pidDataToStopData(pidData: TfGMData): StopData {
   console.log('Running pidDataToStopData')
-  const stopData = new StopData()
+  const stopData: StopData = {
+    stopName: '',
+    incomingTrams: [],
+  }
   if (pidData.length === 0) {
     return stopData
   }
 
   stopData.stopName = pidData[0].StationLocation
   for (const platformData of pidData) {
-    stopData.incomingTrams.push({
-      dest: platformData.Dest0,
-      wait: platformData.Wait0,
-      status: platformData.Status0,
-      carriages: platformData.Carriages0,
-    })
-    stopData.incomingTrams.push({
-      dest: platformData.Dest1,
-      wait: platformData.Wait1,
-      status: platformData.Status1,
-      carriages: platformData.Carriages1,
-    })
-    stopData.incomingTrams.push({
-      dest: platformData.Dest2,
-      wait: platformData.Wait2,
-      status: platformData.Status2,
-      carriages: platformData.Carriages2,
-    })
+    if (!(platformData.Dest0 === '')) {
+      stopData.incomingTrams.push({
+        dest: platformData.Dest0,
+        wait: platformData.Wait0,
+        status: platformData.Status0,
+        carriages: platformData.Carriages0,
+      })
+    }
+    if (!(platformData.Dest1 === '')) {
+      stopData.incomingTrams.push({
+        dest: platformData.Dest1,
+        wait: platformData.Wait1,
+        status: platformData.Status1,
+        carriages: platformData.Carriages1,
+      })
+    }
+    if (!(platformData.Dest2 === '')) {
+      stopData.incomingTrams.push({
+        dest: platformData.Dest2,
+        wait: platformData.Wait2,
+        status: platformData.Status2,
+        carriages: platformData.Carriages2,
+      })
+    }
   }
-
-  stopData.incomingTrams = stopData.incomingTrams.filter(
-    (a) => !(a.wait === '')
-  )
 
   stopData.incomingTrams.sort((a, b) => {
     if (a.status === 'Departing') {
@@ -86,4 +91,23 @@ export function pidDataToStopData(pidData: TfGMData): StopData {
   })
 
   return stopData
+}
+
+export async function getAllStops() {
+  const stops: { label: string; value: string }[] = []
+  const json = await tfgmCall()
+  for (const item of json.value) {
+    const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
+    const newStop = { label: item.StationLocation, value: truncAtcoCode }
+
+    if (
+      !stops.some((value) => {
+        return value.value === truncAtcoCode
+      })
+    ) {
+      stops.push(newStop)
+    }
+  }
+
+  return stops
 }

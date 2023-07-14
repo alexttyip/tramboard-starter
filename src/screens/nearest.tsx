@@ -1,6 +1,6 @@
 import { LocationObject } from 'expo-location'
 import { useState, useEffect } from 'react'
-import { FlatList, StyleSheet, View, Text, Platform } from 'react-native'
+import { FlatList, StyleSheet, View, Text } from 'react-native'
 import { ActivityIndicator, MD2Colors } from 'react-native-paper'
 import * as Location from 'expo-location'
 import { dftCallToJSON, DfTData } from '../clients/dftAPI'
@@ -9,9 +9,9 @@ import {
   TfGMData,
   IncomingTram,
   pidDataToStopData,
+  getAllStops,
 } from '../clients/tfgmAPI'
 import TramDetailsBox from '../components/tramDetailsBox'
-import { config } from '../config'
 
 type Coordinates = {
   latitude: number
@@ -53,26 +53,30 @@ export default function NearestStopScreen() {
     }
     void effectFunc()
   }, [])
+  useEffect(() => {
+    async function effectFunc() {
+      const stops = await getAllStops()
+      setStopsObtained(stops)
+    }
 
-  useEffect(() => void getAllStops(), [getAllStops])
-  console.log('About to getNearestStop')
-  useEffect(
-    () => void getNearestStop(),
-    [location, stopsObtained, getNearestStop]
-  )
-  console.log('About to showTrams')
-  useEffect(() => void showTrams(), [nearestStop, showTrams])
+    void effectFunc()
+  }, [])
+  useEffect(() => void getNearestStop(), [location, stopsObtained])
+  useEffect(() => void showTrams(), [nearestStop])
 
   function filterDuplicates(data: DfTData[]): DfTData[] {
     console.log('Running filterDuplicates')
-    const usedCodes: string[] = []
-    return data.filter((stop) => {
-      if (usedCodes.some((atcoCode) => stop.atcoCode.includes(atcoCode))) {
-        return false
+    return data.reduce<DfTData[]>((reducedData, stop) => {
+      const truncAtcoCode = stop.atcoCode.substring(0, stop.atcoCode.length - 1)
+      if (
+        !reducedData.some((discoveredStop) => {
+          return discoveredStop.atcoCode.includes(truncAtcoCode)
+        })
+      ) {
+        reducedData.push(stop)
       }
-      usedCodes.push(stop.atcoCode.substring(0, stop.atcoCode.length - 1))
-      return true
-    })
+      return reducedData
+    }, [])
   }
 
   function filterJson(json: TfGMData): TfGMData {
@@ -148,29 +152,13 @@ export default function NearestStopScreen() {
     setIncomingTrams(stopData.incomingTrams)
   }
 
-  async function getAllStops() {
-    if (stopsObtained.length > 0) {
-      return
-    }
-
-    const stops: { label: string; value: string }[] = []
-    const json = await tfgmCall()
-    for (const item of json.value) {
-      const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
-      const newStop = { label: item.StationLocation, value: truncAtcoCode }
-
-      if (
-        !stops.some((value) => {
-          return value.value === truncAtcoCode
-        })
-      ) {
-        stops.push(newStop)
-      }
-    }
-
-    setStopsObtained(stops)
+  if (errorMsg) {
+    return (
+      <View style={styles.container}>
+        <Text>{errorMsg}</Text>
+      </View>
+    )
   }
-
   if (incomingTrams.length === 0 || !nearestStop) {
     return (
       <View style={styles.container}>
