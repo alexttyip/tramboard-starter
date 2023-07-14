@@ -4,8 +4,7 @@ import { Button, Text } from 'react-native-paper'
 import NextTramTime from '../components/nextTramTime'
 import { ScreenNavigationProps } from '../routes'
 import SelectDropdown from 'react-native-select-dropdown'
-import React from 'react'
-import departuresFromStation from '../clients/departuresFromStation'
+import { departuresFromStation } from '../clients/departuresFromStation'
 import { formatNumber } from '../helpers/textFormat'
 import { stationNameListFromtfgmApi } from '../clients/departuresFromStation'
 import { useFonts } from 'expo-font'
@@ -48,19 +47,15 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         rowStyle={styles.dropdownRow}
         dropdownOverlayColor={'black'}
         search={true}
-        onFocus={() => {
-          void (async () => {
-            setStationList(await stationNameListFromtfgmApi())
-          })()
-        }}
+        onFocus={() => void stationNameListFromtfgmApi().then(setStationList)}
       />
       <Button
-        onPress={() => {
-          void (async () => {
-            newLiveLocations = await departuresFromStation(station)
-            setDepartures(newLiveLocations)
-          })()
-        }}
+        onPress={() => void departuresFromStation(station).then(setDepartures)}
+        //   void (async () => departuresFromStation().then(setDepartures){
+        //     newLiveLocations = await departuresFromStation(station)
+        //     setDepartures(newLiveLocations)
+        //   })()
+        // }}
         style={styles.buttonStyle}
       >
         <Text style={styles.textBold}>Submit</Text>

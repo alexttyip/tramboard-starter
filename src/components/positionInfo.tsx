@@ -1,10 +1,10 @@
 import { useFonts } from 'expo-font'
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Text, View, StyleSheet, FlatList } from 'react-native'
 
 import * as Location from 'expo-location'
 import { Button } from 'react-native-paper'
-import departuresFromStation from '../clients/departuresFromStation'
+import { departuresFromStation } from '../clients/departuresFromStation'
 import { filterStationData } from '../clients/findStationLocations'
 import { formatNumber } from '../helpers/textFormat'
 import NextTramTime from './nextTramTime'

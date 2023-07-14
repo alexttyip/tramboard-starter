@@ -2,9 +2,6 @@ import { config } from '../config'
 
 type tfgmResponse = Record<string, string>
 
-let liveDepartures: { destination: string; time: string }[] = []
-const uniqueCheck: string[] = []
-
 interface tfgmRawResponse {
   value: tfgmResponse[]
 }
@@ -52,7 +49,7 @@ export const stationNameListFromtfgmApi = async () => {
       stationNames.push(stationName)
     }
   }
-  return stationNames
+  return stationNames.sort()
 }
 
 const fetchDataFromtfgmApi = async (link: string) => {
@@ -68,33 +65,48 @@ const fetchDataFromtfgmApi = async (link: string) => {
   return (await response.json()) as tfgmRawResponse
 }
 
-const tfgmResponseFromRawData = (rawResponse: tfgmRawResponse) => {
+const tfgmResponseFromRawData = (
+  rawResponse: tfgmRawResponse,
+  liveDepartures: { destination: string; time: string }[],
+  uniqueCheck: string[]
+) => {
   for (const stationBoard of rawResponse.value) {
-    extractDepartureFromApiObject({ jsonObject: stationBoard })
+    extractDepartureFromApiObject(
+      { jsonObject: stationBoard },
+      liveDepartures,
+      uniqueCheck
+    )
   }
 }
 
-function extractDepartureFromApiObject({
-  jsonObject,
-}: {
-  jsonObject: tfgmResponse
-}) {
+function extractDepartureFromApiObject(
+  {
+    jsonObject,
+  }: {
+    jsonObject: tfgmResponse
+  },
+  liveDepartures: { destination: string; time: string }[],
+  uniqueCheck: string[]
+) {
   for (let i = 0; i < 4; i++) {
     const departureTime: { destination: string; time: string } | undefined =
       createDepartureObject(jsonObject, i)
     if (typeof departureTime === 'undefined') {
       continue
     }
-    if (isDepartureUnique(departureTime)) {
+    if (isDepartureUnique(departureTime, uniqueCheck)) {
       liveDepartures.push(departureTime)
     }
   }
 }
 
-function isDepartureUnique(departureTime: {
-  destination: string
-  time: string
-}) {
+function isDepartureUnique(
+  departureTime: {
+    destination: string
+    time: string
+  },
+  uniqueCheck: string[]
+) {
   const departureString = String(departureTime.destination + departureTime.time)
   if (!uniqueCheck.includes(departureString)) {
     uniqueCheck.push(departureString)
@@ -118,11 +130,12 @@ function createDepartureObject(
   }
 }
 
-export default async function (station: string) {
-  liveDepartures = []
+export const departuresFromStation = async (station: string) => {
+  const liveDepartures: { destination: string; time: string }[] = []
+  const uniqueCheck: string[] = []
   await stationNameListFromtfgmApi()
   const rawData = await tfgmStationData(station)
-  tfgmResponseFromRawData(rawData)
+  tfgmResponseFromRawData(rawData, liveDepartures, uniqueCheck)
   liveDepartures.sort((a, b) => Number(a.time) - Number(b.time))
   return liveDepartures
 }
