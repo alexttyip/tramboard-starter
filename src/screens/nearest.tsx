@@ -18,6 +18,7 @@ import {
   getAllStops,
   BasicStopData,
 } from '../clients/tfgmAPI'
+import ErrorBox from '../components/errorBox'
 import TramDetailsBox from '../components/tramDetailsBox'
 import haversine from 'haversine-distance'
 
@@ -39,6 +40,7 @@ export default function NearestStopScreen() {
   const [errorMsg, setErrorMsg] = useState<string>()
   const [showOptions, setShowOptions] = useState<boolean>(true)
   const [postcode, setPostcode] = useState<string>()
+  const [postcodeErrorMsg, setPostcodeErrorMsg] = useState<string | undefined>()
 
   async function locUseCurrentLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync()
@@ -53,11 +55,23 @@ export default function NearestStopScreen() {
   async function locUsePostcodeLocation() {
     if (postcode) {
       const postcodeLocation = await postcodeCall(postcode)
+      if (typeof postcodeLocation === 'number') {
+        setPostcodeErrorMsg(
+          'This postcode could not be found. Please enter a valid postcode or try again later'
+        )
+        setShowOptions(true)
+        return
+      }
       const postcodeCoordinates = {
         latitude: postcodeLocation.latitude,
         longitude: postcodeLocation.longitude,
       }
       setLocation(postcodeCoordinates)
+    } else {
+      setPostcodeErrorMsg(
+        'Postcode is undefined. Please enter a valid postcode'
+      )
+      setShowOptions(true)
     }
   }
 
@@ -167,12 +181,14 @@ export default function NearestStopScreen() {
         <Text style={styles.title}>Find a stop nearby</Text>
         <TextInput
           label="Postcode"
-          underlineColor={'black'}
-          activeUnderlineColor={'black'}
+          outlineColor={'black'}
+          activeOutlineColor={'black'}
           value={postcode}
-          style={{ margin: 5, backgroundColor: '#fffacc' }}
+          mode={'outlined'}
+          style={{ margin: 5 }}
           onChangeText={(postcode) => setPostcode(postcode)}
         ></TextInput>
+        <ErrorBox msg={postcodeErrorMsg} />
         <Button
           style={styles.button}
           dark={false}
@@ -236,5 +252,8 @@ const styles = StyleSheet.create({
     marginTop: 15,
     color: 'black',
     backgroundColor: '#ffec44',
+    borderColor: '#000000',
+    borderWidth: 1,
+    overflow: 'hidden',
   },
 })

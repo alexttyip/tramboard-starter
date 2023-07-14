@@ -15,10 +15,19 @@ const TramDetailsBox = ({ tram }: TramProperty) => {
   } else {
     waitText = tram.status
   }
+
+  let carriageText: string
+  if (tram.carriages === 'Single') {
+    carriageText = '2'
+  } else {
+    carriageText = '4'
+  }
+
   return (
     <View style={styles.item}>
       <Text style={styles.title}>{tram.dest}</Text>
-      <Text>{waitText}</Text>
+      <Text style={styles.waitText}>{waitText}</Text>
+      <Text style={styles.waitText}>{carriageText} carriages</Text>
     </View>
   )
 }
@@ -26,12 +35,18 @@ const TramDetailsBox = ({ tram }: TramProperty) => {
 const styles = StyleSheet.create({
   item: {
     backgroundColor: '#ffec44',
+    borderColor: '#000000',
+    borderWidth: 2,
+    overflow: 'hidden',
     padding: 20,
     marginVertical: 8,
     borderRadius: 20,
   },
   title: {
     fontSize: 24,
+  },
+  waitText: {
+    fontSize: 16,
   },
 })
 

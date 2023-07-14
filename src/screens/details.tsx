@@ -61,17 +61,21 @@ export default function DetailsScreen() {
           closeOnBlur={true}
           textInputProps={{
             placeholder: 'Choose stop to show details',
+            placeholderTextColor: '#000000',
           }}
           inputContainerStyle={{
             marginTop: 15,
+            backgroundColor: '#ffffff',
+            borderWidth: 1,
           }}
           closeOnSubmit={false}
           onSelectItem={setStop}
           dataSet={basicStopDataArrayToDropdownList(stopsObtained)}
         />
         <Button
-          style={{ marginTop: 15 }}
-          mode="outlined"
+          style={styles.button}
+          mode="contained"
+          dark={false}
           onPress={() => void handleClick()}
         >
           Find Times
@@ -106,5 +110,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+  },
+  button: {
+    marginTop: 15,
+    marginBottom: 15,
+    color: 'black',
+    backgroundColor: '#ffec44',
+    borderColor: '#000000',
+    borderWidth: 1,
+    overflow: 'hidden',
   },
 })
