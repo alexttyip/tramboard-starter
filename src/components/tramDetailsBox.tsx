@@ -8,7 +8,10 @@ type TramProperty = {
 const TramDetailsBox = ({ tram }: TramProperty) => {
   let waitText: string
   if (tram.status === 'Due') {
-    waitText = 'Due in ' + tram.wait + ' minutes'
+    waitText = 'Due in ' + tram.wait + ' minute'
+    if (tram.wait !== '1') {
+      waitText += 's'
+    }
   } else {
     waitText = tram.status
   }

@@ -19,6 +19,7 @@ import {
   BasicStopData,
 } from '../clients/tfgmAPI'
 import TramDetailsBox from '../components/tramDetailsBox'
+import haversine from 'haversine-distance'
 
 export type Coordinates = {
   latitude: number
@@ -27,10 +28,7 @@ export type Coordinates = {
 
 function calculateDistance(locationA: Coordinates, locationB: Coordinates) {
   // Euclidean for now
-  return Math.sqrt(
-    Math.pow(locationA.latitude - locationB.latitude, 2) +
-      Math.pow(locationA.longitude - locationB.longitude, 2)
-  )
+  return haversine(locationA, locationB)
 }
 
 export default function NearestStopScreen() {
@@ -43,14 +41,12 @@ export default function NearestStopScreen() {
   const [postcode, setPostcode] = useState<string>()
 
   async function locUseCurrentLocation() {
-    console.log('Entered locUseCurrentLocation')
     const { status } = await Location.requestForegroundPermissionsAsync()
     if (status !== 'granted') {
       setErrorMsg('Permission to access location was denied')
       return
     }
     const location = await Location.getCurrentPositionAsync({})
-
     setLocation(location.coords)
   }
 
@@ -77,7 +73,6 @@ export default function NearestStopScreen() {
   useEffect(() => void showTrams(), [nearestStop])
 
   function filterDuplicates(data: DfTData[]): DfTData[] {
-    console.log('Running filterDuplicates')
     return data.reduce<DfTData[]>((reducedData, stop) => {
       const truncAtcoCode = stop.atcoCode.substring(0, stop.atcoCode.length - 1)
       if (
@@ -107,18 +102,14 @@ export default function NearestStopScreen() {
 
   async function getNearestStop() {
     if (nearestStop) {
-      console.log('!nearestStop')
       return
     }
     if (!location) {
-      console.log('!location')
       return
     }
     if (stopsObtained.length === 0) {
-      console.log('stopsObtained =0 ')
       return
     }
-    console.log('Running getNearestStop')
 
     let stopDataDfT = await dftCallToJSON()
     stopDataDfT = filterDuplicates(stopDataDfT)
@@ -156,7 +147,6 @@ export default function NearestStopScreen() {
     if (incomingTrams.length > 0) {
       return
     }
-    console.log('Running showTrams')
     const json = await tfgmCall()
     const screenData = filterJson(json.value)
     const stopData = pidDataToStopData(screenData)
@@ -174,14 +164,18 @@ export default function NearestStopScreen() {
   if (showOptions) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Find nearest stop by location.</Text>
+        <Text style={styles.title}>Find a stop nearby</Text>
         <TextInput
           label="Postcode"
+          underlineColor={'black'}
+          activeUnderlineColor={'black'}
           value={postcode}
+          style={{ margin: 5, backgroundColor: '#fffacc' }}
           onChangeText={(postcode) => setPostcode(postcode)}
         ></TextInput>
         <Button
           style={styles.button}
+          dark={false}
           mode="contained"
           onPress={() => {
             setShowOptions(false)
@@ -193,6 +187,7 @@ export default function NearestStopScreen() {
         <Button
           style={styles.button}
           mode="contained"
+          dark={false}
           onPress={() => {
             setShowOptions(false)
             void locUseCurrentLocation()
@@ -206,7 +201,7 @@ export default function NearestStopScreen() {
   if (incomingTrams.length === 0 || !nearestStop) {
     return (
       <View style={styles.container}>
-        <Text>Finding nearest stop...</Text>
+        <Text style={styles.title}>Finding nearest stop...</Text>
         <ActivityIndicator animating={true} color={MD2Colors.red800} />
       </View>
     )
@@ -230,9 +225,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
+    alignSelf: 'center',
+    fontSize: 24,
+    margin: 5,
+  },
+  titleStop: {
     fontSize: 24,
   },
   button: {
     marginTop: 15,
+    color: 'black',
+    backgroundColor: '#ffec44',
   },
 })
