@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { StyleSheet, View, FlatList } from 'react-native'
 import { Button, Text } from 'react-native-paper'
+import NextTramTime from '../components/nextTramTime'
 import { ScreenNavigationProps } from '../routes'
 import SelectDropdown from 'react-native-select-dropdown'
 import React from 'react'
 import departuresFromStation from '../clients/departuresFromStation'
 import { formatNumber } from '../helpers/textFormat'
-import { stationNameListFromTFGMApi } from '../clients/departuresFromStation'
+import { stationNameListFromtfgmApi } from '../clients/departuresFromStation'
+import { useFonts } from 'expo-font'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
 
@@ -18,27 +20,35 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   >([])
   const [station, setStation] = useState('')
   const [stationList, setStationList] = useState<string[]>([])
-
+  const [loaded] = useFonts({
+    VictorMono: require('../../assets/fonts/VictorMono-Regular.ttf'),
+    Oswald: require('../../assets/fonts/Oswald-Regular.ttf'),
+  })
+  if (!loaded) {
+    return null
+  }
   return (
     <View style={styles.container}>
-      {/*<Button mode="contained" onPress={() => navigation.navigate('Details')}>*/}
-      {/*  Go to details*/}
-      {/*</Button>*/}
+      <View style={styles.mainView}>
+        <Button onPress={() => navigation.navigate('Details')}>
+          <Text style={styles.nextPageButton}>Find Closest Station</Text>
+        </Button>
+      </View>
       <SelectDropdown
-        defaultButtonText="Choose a tram stop"
+        defaultButtonText="Choose Tram Stop &#9660;"
         data={stationList}
         onSelect={(selectedItem: string) => {
           setStation(selectedItem)
         }}
         buttonStyle={styles.dropdown}
-        buttonTextStyle={styles.text}
+        buttonTextStyle={styles.dropdownButtonText}
         rowTextStyle={styles.text}
         rowStyle={styles.dropdownRow}
         dropdownOverlayColor={'black'}
         search={true}
         onFocus={() => {
           void (async () => {
-            setStationList(await stationNameListFromTFGMApi())
+            setStationList(await stationNameListFromtfgmApi())
           })()
         }}
       />
@@ -57,11 +67,24 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       <FlatList
         data={departures}
         renderItem={({ item }) => (
-          <Text style={styles.text}>
-            {formatNumber(item.time)} --- {item.destination}
-          </Text>
+          <NextTramTime
+            dueTime={formatNumber(item.time)}
+            destinationName={item.destination}
+          >
+            {' '}
+          </NextTramTime>
         )}
       />
+      {/*<Button*/}
+      {/*  onPress={() => {*/}
+      {/*    void (async () => {*/}
+      {/*      await filterStationData()*/}
+      {/*    })()*/}
+      {/*  }}*/}
+      {/*  style={styles.buttonStyle}*/}
+      {/*>*/}
+      {/*  <Text style={styles.textBold}>Location Finder</Text>*/}
+      {/*</Button>*/}
     </View>
   )
 }
@@ -70,7 +93,7 @@ export default HomeScreen
 
 const styles = StyleSheet.create({
   container: {
-    fontFamily: 'Avenir',
+    // fontFamily: 'Avenir',
     flex: 1,
     backgroundColor: '#1a1a1a',
     alignItems: 'center',
@@ -78,21 +101,21 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   text: {
-    fontFamily: 'Avenir',
+    fontFamily: 'Oswald',
     color: 'white',
   },
   textBold: {
     marginTop: 10,
-    fontFamily: 'Avenir',
+    fontFamily: 'VictorMono',
     fontWeight: 'bold',
     color: 'white',
     fontSize: 18,
   },
   dropdown: {
     marginTop: 25,
-    fontFamily: 'Avenir',
-    backgroundColor: '#e67300',
-    width: 200,
+    fontFamily: 'Oswald',
+    backgroundColor: 'black',
+    width: 250,
     borderRadius: 25,
     color: 'white',
   },
@@ -102,5 +125,23 @@ const styles = StyleSheet.create({
   buttonStyle: {
     paddingTop: 10,
     height: 50,
+  },
+  dropdownButtonText: {
+    fontFamily: 'VictorMono',
+    color: 'white',
+    fontSize: 18,
+  },
+  nextPageButton: {
+    fontFamily: 'Oswald',
+    fontWeight: 'bold',
+    color: 'white',
+    fontSize: 13,
+  },
+  mainView: {
+    backgroundColor: '#947100',
+    marginLeft: 'auto',
+    marginRight: 8,
+    marginTop: 8,
+    borderRadius: 8,
   },
 })

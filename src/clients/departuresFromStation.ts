@@ -1,42 +1,53 @@
 import { config } from '../config'
 
-type TFGMResponse = Record<string, string>
+type tfgmResponse = Record<string, string>
 
 let liveDepartures: { destination: string; time: string }[] = []
 const uniqueCheck: string[] = []
 
-interface TFGMRawResponse {
-  value: TFGMResponse[]
+interface tfgmRawResponse {
+  value: tfgmResponse[]
 }
 
-const tFGMStationData = async (station: string) => {
-  const link = `$filter=StationLocation eq '${station}'`
-  return await fetchDataFromTFGMApi(link)
-}
-
-// const stationNames: string[] = []
-
-const aTCCodeToStationName: { [index: string]: string } = {}
-
-const aTCOCodeListFromTFGMApi = async () => {
-  const link = ''
-  const rawData = await fetchDataFromTFGMApi(link)
-  if (!rawData) {
-    return
-  }
-  for (const stationBoard of rawData.value) {
-    const stationATCOCode: string = stationBoard.AtcoCode
-    if (!Object.keys(aTCCodeToStationName).includes(stationATCOCode)) {
-      aTCCodeToStationName[stationATCOCode] = stationBoard.StationLocation
+export const convertAtcoToStationName = async (atcoCode: string) => {
+  const tfgmRawData = await fetchDataFromtfgmApi()
+  for (const stationBoardEntry of tfgmRawData.value) {
+    if (stationBoardEntry.AtcoCode === atcoCode) {
+      return stationBoardEntry.StationLocation
     }
   }
-  console.log(aTCCodeToStationName)
 }
 
-export const stationNameListFromTFGMApi = async () => {
+const tfgmStationData = async (station: string) => {
+  const link = `$filter=StationLocation eq '${station}'`
+  return await fetchDataFromtfgmApi(link)
+}
+
+const stationATCOCodeDict: { [index: string]: string[] } = {}
+
+export const atcoToStationCode = async () => {
+  const stationATCOCodeDict: { [index: string]: string } = {}
+  const link = ''
+  const rawData = await fetchDataFromtfgmApi(link)
+  // console.log(rawData.value)
+  for (const stationBoard of rawData.value) {
+    const stationAtco: string = stationBoard.AtcoCode
+    if (!Object.keys(stationATCOCodeDict).includes(stationAtco)) {
+      stationATCOCodeDict['18' + stationAtco.slice(2)] = [stationBoard.StationLocation]
+    }
+  }
+  return stationATCOCodeDict
+}
+
+const findStationLocation = (station) => {
+  let stationAtco = stationATCOCodeDict[station]
+  console.log(stationAtco)
+}
+
+export const stationNameListFromtfgmApi = async () => {
   const stationNames: string[] = []
   const link = ''
-  const rawData = await fetchDataFromTFGMApi(link)
+  const rawData = await fetchDataFromtfgmApi(link)
   for (const stationBoard of rawData.value) {
     const stationName: string = stationBoard.StationLocation
     if (!stationNames.includes(stationName)) {
@@ -46,8 +57,7 @@ export const stationNameListFromTFGMApi = async () => {
   return stationNames
 }
 
-const fetchDataFromTFGMApi = async (link: string) => {
-  console.log(`https://api.tfgm.com/odata/Metrolinks?${link}`)
+const fetchDataFromtfgmApi = async (link: string) => {
   const response: Response = await fetch(
     `https://api.tfgm.com/odata/Metrolinks?${link}`,
     {
@@ -57,10 +67,10 @@ const fetchDataFromTFGMApi = async (link: string) => {
       },
     }
   )
-  return (await response.json()) as TFGMRawResponse
+  return (await response.json()) as tfgmRawResponse
 }
 
-const tFGMResponseFromRawData = (rawResponse: TFGMRawResponse) => {
+const tfgmResponseFromRawData = (rawResponse: tfgmRawResponse) => {
   for (const stationBoard of rawResponse.value) {
     extractDepartureFromApiObject({ jsonObject: stationBoard })
   }
@@ -69,7 +79,7 @@ const tFGMResponseFromRawData = (rawResponse: TFGMRawResponse) => {
 function extractDepartureFromApiObject({
   jsonObject,
 }: {
-  jsonObject: TFGMResponse
+  jsonObject: tfgmResponse
 }) {
   for (let i = 0; i < 4; i++) {
     const departureTime: { destination: string; time: string } | undefined =
@@ -87,9 +97,8 @@ function isDepartureUnique(departureTime: {
   destination: string
   time: string
 }) {
-  const departureString = String(
+  const departureString =
     String(departureTime.destination + departureTime.time)
-  )
   if (!uniqueCheck.includes(departureString)) {
     uniqueCheck.push(departureString)
     return true
@@ -98,7 +107,7 @@ function isDepartureUnique(departureTime: {
 }
 
 function createDepartureObject(
-  jsonObject: TFGMResponse,
+  jsonObject: tfgmResponse,
   i: number
 ): { destination: string; time: string } | undefined {
   const waitTime = 'Wait' + String(i)
@@ -113,10 +122,11 @@ function createDepartureObject(
 }
 
 export default async function (station: string) {
+  console.log(station, 'inside dep file')
   liveDepartures = []
-  await stationNameListFromTFGMApi()
-  const rawData = await tFGMStationData(station)
-  tFGMResponseFromRawData(rawData)
+  await stationNameListFromtfgmApi()
+  const rawData = await tfgmStationData(station)
+  tfgmResponseFromRawData(rawData)
   liveDepartures.sort((a, b) => Number(a.time) - Number(b.time))
   return liveDepartures
 }
