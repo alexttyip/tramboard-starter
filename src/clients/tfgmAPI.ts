@@ -21,7 +21,13 @@ export type TfGMData = {
 
 type StopData = {
   stopName: string
+  atcoCode: string
   incomingTrams: IncomingTram[]
+}
+
+export type BasicStopData = {
+  stopName: string
+  truncatedAtcoCode: string
 }
 
 export type IncomingTram = {
@@ -45,6 +51,7 @@ export function pidDataToStopData(pidData: TfGMData): StopData {
   console.log('Running pidDataToStopData')
   const stopData: StopData = {
     stopName: '',
+    atcoCode: '',
     incomingTrams: [],
   }
   if (pidData.length === 0) {
@@ -52,6 +59,10 @@ export function pidDataToStopData(pidData: TfGMData): StopData {
   }
 
   stopData.stopName = pidData[0].StationLocation
+  stopData.atcoCode = pidData[0].AtcoCode.substring(
+    0,
+    pidData[0].AtcoCode.length - 1
+  )
   for (const platformData of pidData) {
     if (!(platformData.Dest0 === '')) {
       stopData.incomingTrams.push({
@@ -94,15 +105,18 @@ export function pidDataToStopData(pidData: TfGMData): StopData {
 }
 
 export async function getAllStops() {
-  const stops: { label: string; value: string }[] = []
+  const stops: BasicStopData[] = []
   const json = await tfgmCall()
   for (const item of json.value) {
     const truncAtcoCode = item.AtcoCode.substring(0, item.AtcoCode.length - 1)
-    const newStop = { label: item.StationLocation, value: truncAtcoCode }
+    const newStop = {
+      stopName: item.StationLocation,
+      truncatedAtcoCode: truncAtcoCode,
+    }
 
     if (
       !stops.some((value) => {
-        return value.value === truncAtcoCode
+        return value.truncatedAtcoCode === truncAtcoCode
       })
     ) {
       stops.push(newStop)

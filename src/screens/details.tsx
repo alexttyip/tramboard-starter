@@ -3,6 +3,7 @@ import { FlatList, StyleSheet, View } from 'react-native'
 import { Button } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
 import {
+  BasicStopData,
   getAllStops,
   IncomingTram,
   pidDataToStopData,
@@ -15,9 +16,7 @@ export default function DetailsScreen() {
   const [showDropDown, setShowDropDown] = useState(false)
   const [stop, setStop] = useState('')
   const [incomingTrams, setIncomingTrams] = useState<IncomingTram[]>([])
-  const [stopsObtained, setStopsObtained] = useState<
-    { label: string; value: string }[]
-  >([])
+  const [stopsObtained, setStopsObtained] = useState<BasicStopData[]>([])
 
   async function handleClick() {
     const json = await tfgmCall()
@@ -57,7 +56,7 @@ export default function DetailsScreen() {
         onDismiss={() => setShowDropDown(false)}
         value={stop}
         setValue={setStop}
-        list={stopsObtained}
+        list={basicStopDataArrayToDropdownList(stopsObtained)}
       />
       <Button
         style={{ marginTop: 15 }}
@@ -72,6 +71,17 @@ export default function DetailsScreen() {
         renderItem={({ item }) => <TramDetailsBox tram={item} />}
       />
     </View>
+  )
+}
+
+function basicStopDataArrayToDropdownList(basicStopDataArray: BasicStopData[]) {
+  return basicStopDataArray.map<{ label: string; value: string }>(
+    (basicStopData) => {
+      return {
+        label: basicStopData.stopName,
+        value: basicStopData.truncatedAtcoCode,
+      }
+    }
   )
 }
 

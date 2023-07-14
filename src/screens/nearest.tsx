@@ -10,6 +10,7 @@ import {
   IncomingTram,
   pidDataToStopData,
   getAllStops,
+  BasicStopData,
 } from '../clients/tfgmAPI'
 import TramDetailsBox from '../components/tramDetailsBox'
 
@@ -28,25 +29,21 @@ function calculateDistance(locationA: Coordinates, locationB: Coordinates) {
 
 export default function NearestStopScreen() {
   console.log('Rendering.....')
-  const [nearestStop, setNearestStop] = useState<{
-    name: string
-    atcoCode: string
-  }>()
+  const [nearestStop, setNearestStop] = useState<BasicStopData>()
   const [incomingTrams, setIncomingTrams] = useState<IncomingTram[]>([])
-  const [stopsObtained, setStopsObtained] = useState<
-    { label: string; value: string }[]
-  >([])
+  const [stopsObtained, setStopsObtained] = useState<BasicStopData[]>([])
   const [location, setLocation] = useState<LocationObject>()
   const [errorMsg, setErrorMsg] = useState<string>()
 
   useEffect(() => {
     const effectFunc = async () => {
+      console.log('Getting permissions...')
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied')
         return
       }
-
+      console.log('Getting data...')
       const location = await Location.getCurrentPositionAsync({})
       setLocation(location)
       console.log('Got Location')
@@ -89,7 +86,7 @@ export default function NearestStopScreen() {
         return false
       }
       usedCodes.push(apiStop.AtcoCode)
-      return apiStop.AtcoCode.includes(nearestStop.atcoCode)
+      return apiStop.AtcoCode.includes(nearestStop.truncatedAtcoCode)
     })
   }
 
@@ -130,11 +127,11 @@ export default function NearestStopScreen() {
       '94' +
       stopDataDfT[0].atcoCode.substring(2, stopDataDfT[0].atcoCode.length - 1)
 
-    const stopName = stopsObtained.filter((stop) => {
-      return platformAtcoCode.includes(stop.value)
+    const stopsOrderedByDistance = stopsObtained.filter((stop) => {
+      return platformAtcoCode.includes(stop.truncatedAtcoCode)
     })
 
-    setNearestStop({ name: stopName[0].label, atcoCode: stopName[0].value })
+    setNearestStop(stopsOrderedByDistance[0])
   }
 
   async function showTrams() {
@@ -169,7 +166,7 @@ export default function NearestStopScreen() {
   }
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{nearestStop.name}</Text>
+      <Text style={styles.title}>{nearestStop.stopName}</Text>
       <FlatList
         data={incomingTrams}
         renderItem={({ item }) => <TramDetailsBox tram={item} />}
