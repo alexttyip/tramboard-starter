@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
 import { Button } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
@@ -69,7 +69,9 @@ export default function DetailsScreen() {
     })
   }
 
-  void getAllStops()
+  useEffect(() => {
+    void getAllStops()
+  }, [])
 
   return (
     <View style={styles.container}>
