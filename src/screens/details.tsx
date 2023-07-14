@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { FlatList, StyleSheet, View } from 'react-native'
+import {
+  AutocompleteDropdownContextProvider,
+  AutocompleteDropdown,
+  TAutocompleteDropdownItem,
+} from 'react-native-autocomplete-dropdown'
 import { Button } from 'react-native-paper'
-import DropDown from 'react-native-paper-dropdown'
 import {
   BasicStopData,
   getAllStops,
@@ -14,7 +18,7 @@ import TramDetailsBox from '../components/tramDetailsBox'
 
 export default function DetailsScreen() {
   const [showDropDown, setShowDropDown] = useState(false)
-  const [stop, setStop] = useState('')
+  const [stop, setStop] = useState<TAutocompleteDropdownItem | null>(null)
   const [incomingTrams, setIncomingTrams] = useState<IncomingTram[]>([])
   const [stopsObtained, setStopsObtained] = useState<BasicStopData[]>([])
 
@@ -33,7 +37,10 @@ export default function DetailsScreen() {
         return false
       }
       usedCodes.push(apiStop.AtcoCode)
-      return apiStop.AtcoCode.includes(stop)
+      if (stop) {
+        return apiStop.AtcoCode.includes(stop.id)
+      }
+      return false
     })
   }
 
@@ -47,42 +54,47 @@ export default function DetailsScreen() {
   }, [])
 
   return (
-    <View style={styles.container}>
-      <DropDown
-        label={'Select Stop...'}
-        mode={'outlined'}
-        visible={showDropDown}
-        showDropDown={() => setShowDropDown(true)}
-        onDismiss={() => setShowDropDown(false)}
-        value={stop}
-        setValue={setStop}
-        list={basicStopDataArrayToDropdownList(stopsObtained)}
-      />
-      <Button
-        style={{ marginTop: 15 }}
-        mode="outlined"
-        onPress={() => void handleClick()}
-      >
-        Find Times
-      </Button>
+    <AutocompleteDropdownContextProvider>
+      <View style={styles.container}>
+        <AutocompleteDropdown
+          clearOnFocus={false}
+          closeOnBlur={true}
+          textInputProps={{
+            placeholder: 'Choose stop to show details',
+          }}
+          inputContainerStyle={{
+            marginTop: 15,
+          }}
+          closeOnSubmit={false}
+          onSelectItem={setStop}
+          dataSet={basicStopDataArrayToDropdownList(stopsObtained)}
+        />
+        <Button
+          style={{ marginTop: 15 }}
+          mode="outlined"
+          onPress={() => void handleClick()}
+        >
+          Find Times
+        </Button>
 
-      <FlatList
-        data={incomingTrams}
-        renderItem={({ item }) => <TramDetailsBox tram={item} />}
-      />
-    </View>
+        <FlatList
+          data={incomingTrams}
+          renderItem={({ item }) => <TramDetailsBox tram={item} />}
+        />
+      </View>
+    </AutocompleteDropdownContextProvider>
   )
 }
 
 function basicStopDataArrayToDropdownList(basicStopDataArray: BasicStopData[]) {
-  return basicStopDataArray.map<{ label: string; value: string }>(
-    (basicStopData) => {
+  return basicStopDataArray
+    .map<{ title: string; id: string }>((basicStopData) => {
       return {
-        label: basicStopData.stopName,
-        value: basicStopData.truncatedAtcoCode,
+        title: basicStopData.stopName,
+        id: basicStopData.truncatedAtcoCode,
       }
-    }
-  )
+    })
+    .sort((a, b) => (a.title < b.title ? -1 : 1))
 }
 
 const styles = StyleSheet.create({
