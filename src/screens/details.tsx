@@ -49,7 +49,7 @@ export default function DetailsScreen() {
   return (
     <View style={styles.container}>
       <DropDown
-        label={'Stops'}
+        label={'Select Stop...'}
         mode={'outlined'}
         visible={showDropDown}
         showDropDown={() => setShowDropDown(true)}

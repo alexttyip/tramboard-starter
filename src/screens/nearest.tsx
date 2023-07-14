@@ -1,9 +1,15 @@
 import { LocationObject } from 'expo-location'
 import { useState, useEffect } from 'react'
 import { FlatList, StyleSheet, View, Text } from 'react-native'
-import { ActivityIndicator, MD2Colors } from 'react-native-paper'
+import {
+  ActivityIndicator,
+  Button,
+  MD2Colors,
+  TextInput,
+} from 'react-native-paper'
 import * as Location from 'expo-location'
 import { dftCallToJSON, DfTData } from '../clients/dftAPI'
+import { postcodeCall } from '../clients/postcodeAPI'
 import {
   tfgmCall,
   TfGMData,
@@ -14,7 +20,7 @@ import {
 } from '../clients/tfgmAPI'
 import TramDetailsBox from '../components/tramDetailsBox'
 
-type Coordinates = {
+export type Coordinates = {
   latitude: number
   longitude: number
 }
@@ -28,28 +34,37 @@ function calculateDistance(locationA: Coordinates, locationB: Coordinates) {
 }
 
 export default function NearestStopScreen() {
-  console.log('Rendering.....')
   const [nearestStop, setNearestStop] = useState<BasicStopData>()
   const [incomingTrams, setIncomingTrams] = useState<IncomingTram[]>([])
   const [stopsObtained, setStopsObtained] = useState<BasicStopData[]>([])
-  const [location, setLocation] = useState<LocationObject>()
+  const [location, setLocation] = useState<Coordinates>()
   const [errorMsg, setErrorMsg] = useState<string>()
+  const [showOptions, setShowOptions] = useState<boolean>(true)
+  const [postcode, setPostcode] = useState<string>()
 
-  useEffect(() => {
-    const effectFunc = async () => {
-      console.log('Getting permissions...')
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        setErrorMsg('Permission to access location was denied')
-        return
-      }
-      console.log('Getting data...')
-      const location = await Location.getCurrentPositionAsync({})
-      setLocation(location)
-      console.log('Got Location')
+  async function locUseCurrentLocation() {
+    console.log('Entered locUseCurrentLocation')
+    const { status } = await Location.requestForegroundPermissionsAsync()
+    if (status !== 'granted') {
+      setErrorMsg('Permission to access location was denied')
+      return
     }
-    void effectFunc()
-  }, [])
+    const location = await Location.getCurrentPositionAsync({})
+
+    setLocation(location.coords)
+  }
+
+  async function locUsePostcodeLocation() {
+    if (postcode) {
+      const postcodeLocation = await postcodeCall(postcode)
+      const postcodeCoordinates = {
+        latitude: postcodeLocation.latitude,
+        longitude: postcodeLocation.longitude,
+      }
+      setLocation(postcodeCoordinates)
+    }
+  }
+
   useEffect(() => {
     async function effectFunc() {
       const stops = await getAllStops()
@@ -118,8 +133,8 @@ export default function NearestStopScreen() {
         longitude: parseFloat(stopB.longitude),
       }
       return (
-        calculateDistance(stopALocation, location.coords) -
-        calculateDistance(stopBLocation, location.coords)
+        calculateDistance(stopALocation, location) -
+        calculateDistance(stopBLocation, location)
       )
     })
 
@@ -156,6 +171,38 @@ export default function NearestStopScreen() {
       </View>
     )
   }
+  if (showOptions) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Find nearest stop by location.</Text>
+        <TextInput
+          label="Postcode"
+          value={postcode}
+          onChangeText={(postcode) => setPostcode(postcode)}
+        ></TextInput>
+        <Button
+          style={styles.button}
+          mode="contained"
+          onPress={() => {
+            setShowOptions(false)
+            void locUsePostcodeLocation()
+          }}
+        >
+          Use Postcode
+        </Button>
+        <Button
+          style={styles.button}
+          mode="contained"
+          onPress={() => {
+            setShowOptions(false)
+            void locUseCurrentLocation()
+          }}
+        >
+          Use Current Location
+        </Button>
+      </View>
+    )
+  }
   if (incomingTrams.length === 0 || !nearestStop) {
     return (
       <View style={styles.container}>
@@ -184,5 +231,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+  },
+  button: {
+    marginTop: 15,
   },
 })
