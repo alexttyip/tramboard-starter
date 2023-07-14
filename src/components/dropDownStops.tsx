@@ -1,104 +1,168 @@
 import React, { Dispatch, SetStateAction, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Button, Text } from 'react-native-paper'
-import DropDown from 'react-native-paper-dropdown'
+import SelectDropdown from 'react-native-select-dropdown'
 import { Station } from '../screens/home'
+import { getStopData } from '../clients/APICalls'
 
 type StopsDropDownProps = {
   setResult: Dispatch<SetStateAction<string>>
   handleResults: (st: Station) => void
-  setStation:React.Dispatch<React.SetStateAction<string>>
-  setStopsDropDownVisible:React.Dispatch<React.SetStateAction<boolean>>
-}
-const listOfStops: { label: string; value: string }[] = []
-function addStopToList(stopName: string) {
-  listOfStops.push({ label: stopName, value: stopName })
-}
-function addListToStopList(stopNames: string[]) {
-  stopNames.sort()
-  for (const stopName of stopNames) {
-    addStopToList(stopName)
-  }
+  setStation: React.Dispatch<React.SetStateAction<string>>
+  setStopsDropDownVisible: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 const stopNames = [
-  'Oldham Mumps',
-  'Freehold',
-  'Peel Hall',
-  'Velopark',
+  'Abraham Moss',
+  'Altrincham',
   'Anchorage',
-  'Besses O’ Th’ Barn',
-  'Wythenshawe Town Centre',
+  'Ashton Moss',
+  'Ashton West',
+  'Ashton-Under-Lyne',
+  'Audenshaw',
+  'Baguley',
+  'Barlow Moor Road',
+  'Barton Dock Road',
+  'Benchill',
+  'Besses O’ Th’ barn',
+  'Bowker Vale',
+  'Broadway',
+  'Brooklands',
+  'Burton Road',
+  'Bury Interchange',
+  'Cemetery Road',
+  'Central Park',
+  'Chorlton',
+  'Clayton Hall',
+  'Cornbrook',
+  'Crossacres',
+  'Crumpsall',
+  'Dane Road',
+  'Deansgate-Castlefield',
+  'Derker',
+  'Didsbury Village',
+  'Droylsden',
+  'East Didsbury',
+  'Eccles',
+  'Edge Lane',
+  'Etihad Campus',
+  'Exchange Quay',
+  'Exchange Square',
+  'Failsworth',
+  'Firswood',
+  'Freehold',
+  'Harbour City',
+  'Heaton Park',
+  'Hollinwood',
+  'Holt Town',
+  'Imperial War Museum',
+  'Kingsway',
+  'Ladywell',
+  'Langworthy',
+  'Manchester Airport',
+  'Market Street',
+  'Martinscroft',
+  'MediaCityUK',
+  'Milnrow',
+  'Monsall',
+  'Moor Road',
+  'Navigation Road',
+  'New Islington',
+  'Newbold',
+  'Newhey',
+  'Newton Heath & Moston',
+  'Northern Moor',
+  'Old Trafford',
+  'Oldham Central',
+  'Oldham King Street',
+  'Oldham Mumps',
+  'Parkway',
+  'Peel Hall',
   'Piccadilly Gardens',
+  'Piccadilly',
+  'Pomona',
+  'Prestwich',
+  'Queens Road',
+  'Radcliffe',
+  'Robinswood Road',
+  'Rochdale Interchange',
+  'Rochdale Railway Station',
+  'Roundthorn',
+  'Sale',
+  'Sale Water Park',
+  'Salford Quays',
+  'Shadowmoss',
+  'Shaw and Crompton',
+  'Shudehill',
+  'South Chadderton',
+  'St Peter\'s Square',
+  'St Werburgh’s Road',
+  'Stretford',
+  'The Trafford Centre',
+  'Timperley',
+  'Trafford Bar',
+  'Velopark',
+  'Victoria',
+  'Village',
+  'Weaste',
+  'West Didsbury',
+  'Westwood',
+  'Wharfside',
+  'Whitefield',
+  'Withington',
+  'Woodlands Road',
+  'Wythenshawe Park',
+  'Wythenshawe Town Centre',
 ]
-
-addListToStopList(stopNames)
+//’
 export default function StopsDropDown({
   setResult,
   handleResults,
   setStation,
   setStopsDropDownVisible,
 }: StopsDropDownProps) {
-  const [dropDownVisible, setDropDownVisible] = useState(true)
   const [stop, setStop] = useState('')
 
-  function handlePress() {
+  async function handlePress() {
+    if (stop.length === 0) {
+      return
+    }
     setStation(stop)
-    setStopsDropDownVisible(false);
-    const filter: string = "?$filter=StationLocation eq '" + stop + "'"
-    const query = 'https://api.tfgm.com/odata/Metrolinks' + filter
-    void fetch(query, {
-      method: 'GET',
-      headers: {
-        'Ocp-Apim-Subscription-Key': 'b2f7a4b706de42af87d751cc83f4cdae',
-      },
-    }).then((response) => {
-      console.log(response)
-      if (!response.ok) {
-        throw new Error(response.statusText)
-      } else {
-        console.log(response)
-        void responseToJSON(response).then((responseJSON) => {
-          // console.log(responseJSON)
-          handleResults(responseJSON)
-        })
-      }
-    })
+    setStopsDropDownVisible(false)
+    const filter: string =
+      '?$filter=StationLocation eq \'' + stop.replace('\'', '\'\'') + "'"
+    const results = await getStopData(filter)
+    handleResults(results)
   }
 
   return (
     <View
       style={{
         width: '80%',
+        height: '80%',
+        marginTop: '50%',
+        alignSelf: 'center',
       }}
     >
-      <View style={stylesDropDown.dropDown}>
-        <DropDown
-          label={'Choose a stop'}
-          mode={'outlined'}
-          visible={dropDownVisible}
-          onDismiss={() => setDropDownVisible(false)}
-          showDropDown={() => setDropDownVisible(true)}
-          value={stop}
-          setValue={setStop}
-          list={listOfStops}
+      <View>
+        <SelectDropdown
+          data={stopNames}
+          onSelect={setStop}
+          search={true}
+          rowStyle={stylesDropDown.rowStyle}
+          buttonStyle={stylesDropDown.dropDown}
+          defaultButtonText={'Select a tram stop'}
         />
       </View>
       <Button
         style={stylesDropDown.button}
         mode="contained"
-        onPress={() => handlePress()}
+        onPress={async () => await handlePress()}
       >
-        See results
+        See tram times
       </Button>
     </View>
   )
-}
-
-async function responseToJSON(response: Response) {
-  return response.json().then((returnVal) => {
-    return returnVal
-  })
 }
 
 const stylesDropDown = StyleSheet.create({
@@ -113,10 +177,15 @@ const stylesDropDown = StyleSheet.create({
   },
   dropDown: {
     paddingBottom: 20,
+    alignSelf: 'center',
+    width: '80%',
   },
   button: {
     marginBottom: 20,
     paddingTop: 5,
     paddingBottom: 5,
+  },
+  rowStyle: {
+    width: '100%',
   },
 })

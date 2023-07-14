@@ -2,11 +2,13 @@ import React, { Dispatch, SetStateAction, useState, useEffect } from 'react'
 import { Linking, ScrollView, StyleSheet, View, Image } from 'react-native'
 import { Button, Text } from 'react-native-paper'
 import DropDown from 'react-native-paper-dropdown'
+import { getStopData } from '../clients/APICalls'
 import StopsDropDown from '../components/dropDownStops'
 import { ScreenNavigationProps } from '../routes'
 import DetailsScreen from './details'
 import tram1 from './tram1.png'
 import tram2 from './tram2.png'
+import refreshButton from './refreshButton.png'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
 
@@ -40,10 +42,40 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [dropDownVisible, setDropDownVisible] = useState(true)
   const [station, setStation] = useState('')
   const [pageContent, setPageContent] = useState(<></>)
-  useEffect(() => setPageContent(showDropDown()), [dropDownVisible])
+  const [refreshCount, setRefreshCount] = useState(0)
+  const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    setPageContent(showDropDown())
+  }, [details, dropDownVisible, refreshCount])
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => !dropDownVisible && setCount(count + 1),
+      1000
+    )
+    const fetchData = async () => {
+      const filter: string =
+        '?$filter=StationLocation eq \'' + station.replace('\'', '\'\'') + "'"
+      const results = await getStopData(filter)
+      handleResults(results)
+    }
+    fetchData().then((r) => {})
+    return () => clearTimeout(timer)
+  }, [count, dropDownVisible])
   function handleResults(stationInfo: Station) {
     //console.log(stationInfo)
     const boardsInfo: Board[] = stationInfo['value']
+    const departureTimes = addDepartureTimes(boardsInfo)
+
+    departureTimes.sort((a, b) => {
+      return a.waitTime - b.waitTime
+    })
+
+    setDetails(departureTimes)
+  }
+
+  function addDepartureTimes(boardsInfo: Board[]) {
     const departureTimes: Departure[] = []
     const handledPlatforms: Set<string> = new Set()
     for (const boardInfo of boardsInfo) {
@@ -71,13 +103,9 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
         })
       }
     }
-
-    departureTimes.sort((a, b) => {
-      return a.waitTime - b.waitTime
-    })
-
-    setDetails(departureTimes)
+    return departureTimes
   }
+
   function showDropDown(): JSX.Element {
     if (dropDownVisible) {
       return (
@@ -90,19 +118,44 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       )
     } else {
       return (
-        <View>
-          <Text>Tram departures from {station}</Text>
-          <Button onPress={() => setDropDownVisible(true)}>
+        <View style={styles.stopsView}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+            <View style={{ width: '82%' }}>
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                Tram departures from
+              </Text>
+              <Text style={{ fontSize: 24, marginBottom: 10 }}>{station}</Text>
+            </View>
+            <Button
+              onPress={async () => {
+                const filter: string =
+                  "?$filter=StationLocation eq '" +
+                  station.replace("'", "''") +
+                  "'"
+                const results = await getStopData(filter)
+                handleResults(results)
+              }}
+            >
+              <Image
+                source={refreshButton}
+                style={{ width: 31, height: 31, marginTop: 20, marginLeft: 3 }}
+              />
+            </Button>
+          </View>
+          <Button
+            style={styles.goBackButton}
+            mode="contained"
+            onPress={() => setDropDownVisible(true)}
+          >
             Choose another stop
-          </Button>l
-            <DetailsScreen details={details} />
+          </Button>
+          <DetailsScreen details={details} />
         </View>
       )
     }
   }
   //console.log(details)
-  const view = <>{pageContent}</>
-  return view
+  return <>{pageContent}</>
 }
 
 export default HomeScreen
@@ -138,5 +191,14 @@ const styles = StyleSheet.create({
   doubleTram: {
     height: 20,
     width: 120,
+  },
+  stopsView: {
+    alignSelf: 'center',
+    width: '90%',
+  },
+  goBackButton: {
+    marginBottom: 20,
+    paddingTop: 5,
+    paddingBottom: 5,
   },
 })

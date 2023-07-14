@@ -32,7 +32,7 @@ function mapDetails(details: Departure[]) {
             source={departure.isSingle ? tram1 : tram2}
           />
         </View>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 2 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', paddingTop: 5 }}>
           <Text style={{ fontSize: 40, alignContent: 'flex-end' }}>
             {departure['waitTime'] === 0 ? 'Due' : departure['waitTime']}
           </Text>
@@ -58,10 +58,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'yellow',
     textDecorationStyle: 'solid',
     paddingBottom: 15,
-    paddingTop: 15,
+    paddingTop: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
     borderRadius: 10,
+    width: '100%',
   },
   singleTram: {
     height: 20,
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
     width: 120,
   },
   details: {
-    height: '70%',
-    width: '80%',
+    height: '75%',
+    width: '100%',
   },
 })
