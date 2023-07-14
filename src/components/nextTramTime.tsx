@@ -1,15 +1,17 @@
-import { useFonts } from "expo-font";
+import { useFonts } from 'expo-font'
 import { View, Text, StyleSheet } from 'react-native'
 
 type tramBoxProp = {
-  destinationName: string,
+  destinationName: string
   dueTime: string
 }
 const TramBox = ({ destinationName, dueTime }: tramBoxProp) => {
   const [loaded] = useFonts({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     VictorMono: require('../../assets/fonts/VictorMono-Regular.ttf'),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     Oswald: require('../../assets/fonts/Oswald-Regular.ttf'),
-  });
+  })
   if (!loaded) {
     return null
   }
@@ -43,5 +45,5 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Oswald',
     color: 'white',
-  }
+  },
 })

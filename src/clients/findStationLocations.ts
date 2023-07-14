@@ -79,11 +79,6 @@ export const filterStationData = async (
       },
       { latitude: userLatitude, longitude: userLongitude }
     )
-    //   Number(stationEntry[30]),
-    //   Number(stationEntry[29]),
-    //   userLatitude,
-    //   userLongitude
-    // )
     if (calculatedDistance < minDistance) {
       minDistance = calculatedDistance
       minEntry = stationEntry

@@ -11,8 +11,6 @@ import { useFonts } from 'expo-font'
 
 type HomeScreenProps = ScreenNavigationProps<'Home'>
 
-let newLiveLocations = []
-
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [departures, setDepartures] = useState<
     { destination: string; time: string }[]
@@ -51,11 +49,6 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
       />
       <Button
         onPress={() => void departuresFromStation(station).then(setDepartures)}
-        //   void (async () => departuresFromStation().then(setDepartures){
-        //     newLiveLocations = await departuresFromStation(station)
-        //     setDepartures(newLiveLocations)
-        //   })()
-        // }}
         style={styles.buttonStyle}
       >
         <Text style={styles.textBold}>Submit</Text>
