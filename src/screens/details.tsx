@@ -5,7 +5,7 @@ import {
   AutocompleteDropdown,
   TAutocompleteDropdownItem,
 } from 'react-native-autocomplete-dropdown'
-import { Button } from 'react-native-paper'
+import { Button, Text } from 'react-native-paper'
 import {
   BasicStopData,
   getAllStops,
@@ -14,13 +14,14 @@ import {
   tfgmCall,
   TfGMData,
 } from '../clients/tfgmAPI'
+import { DateTime } from 'luxon'
 import TramDetailsBox from '../components/tramDetailsBox'
 
 export default function DetailsScreen() {
-  const [showDropDown, setShowDropDown] = useState(false)
   const [stop, setStop] = useState<TAutocompleteDropdownItem | null>(null)
   const [incomingTrams, setIncomingTrams] = useState<IncomingTram[]>([])
   const [stopsObtained, setStopsObtained] = useState<BasicStopData[]>([])
+  const [updateTime, setUpdateTime] = useState<string>()
 
   async function handleClick() {
     const json = await tfgmCall()
@@ -28,6 +29,9 @@ export default function DetailsScreen() {
     const stopData = pidDataToStopData(screenData)
 
     setIncomingTrams(stopData.incomingTrams)
+    setUpdateTime(
+      DateTime.now().setLocale('en-GB').toLocaleString(DateTime.DATETIME_FULL)
+    )
   }
 
   function filterJson(json: TfGMData): TfGMData {
@@ -85,6 +89,17 @@ export default function DetailsScreen() {
           data={incomingTrams}
           renderItem={({ item }) => <TramDetailsBox tram={item} />}
         />
+        <Text style={{ fontSize: 12, textAlign: 'center' }}>
+          Last Updated at {updateTime}
+        </Text>
+        <Button
+          style={styles.button}
+          mode="contained"
+          dark={false}
+          onPress={() => void handleClick()}
+        >
+          Refresh Times
+        </Button>
       </View>
     </AutocompleteDropdownContextProvider>
   )
@@ -112,8 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   button: {
-    marginTop: 15,
-    marginBottom: 15,
+    marginVertical: 8,
     color: 'black',
     backgroundColor: '#ffec44',
     borderColor: '#000000',

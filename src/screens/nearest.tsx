@@ -1,4 +1,4 @@
-import { LocationObject } from 'expo-location'
+import { DateTime } from 'luxon'
 import { useState, useEffect } from 'react'
 import { FlatList, StyleSheet, View, Text } from 'react-native'
 import {
@@ -41,6 +41,7 @@ export default function NearestStopScreen() {
   const [showOptions, setShowOptions] = useState<boolean>(true)
   const [postcode, setPostcode] = useState<string>()
   const [postcodeErrorMsg, setPostcodeErrorMsg] = useState<string | undefined>()
+  const [updateTime, setUpdateTime] = useState<string>()
 
   async function locUseCurrentLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync()
@@ -166,6 +167,9 @@ export default function NearestStopScreen() {
     const stopData = pidDataToStopData(screenData)
 
     setIncomingTrams(stopData.incomingTrams)
+    setUpdateTime(
+      DateTime.now().setLocale('en-GB').toLocaleString(DateTime.DATETIME_FULL)
+    )
   }
 
   if (errorMsg) {
@@ -229,6 +233,17 @@ export default function NearestStopScreen() {
         data={incomingTrams}
         renderItem={({ item }) => <TramDetailsBox tram={item} />}
       />
+      <Text style={{ fontSize: 12, textAlign: 'center' }}>
+        Last Updated at {updateTime}
+      </Text>
+      <Button
+        style={styles.button}
+        mode="contained"
+        dark={false}
+        onPress={() => void showTrams()}
+      >
+        Refresh Times
+      </Button>
     </View>
   )
 }
@@ -249,7 +264,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   button: {
-    marginTop: 15,
+    marginVertical: 8,
     color: 'black',
     backgroundColor: '#ffec44',
     borderColor: '#000000',
