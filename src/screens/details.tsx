@@ -132,6 +132,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffec44',
     borderColor: '#000000',
     borderWidth: 1,
-    overflow: 'hidden',
   },
 })

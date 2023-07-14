@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { FlatList, StyleSheet, View, Text } from 'react-native'
 import {
   ActivityIndicator,
@@ -53,6 +53,23 @@ export default function NearestStopScreen() {
     setLocation(location.coords)
   }
 
+  const filterJson = useCallback(
+    (json: TfGMData): TfGMData => {
+      if (!nearestStop) {
+        return []
+      }
+      const usedCodes: string[] = []
+      return json.filter((apiStop) => {
+        if (usedCodes.includes(apiStop.AtcoCode)) {
+          return false
+        }
+        usedCodes.push(apiStop.AtcoCode)
+        return apiStop.AtcoCode.includes(nearestStop.truncatedAtcoCode)
+      })
+    },
+    [nearestStop]
+  )
+
   async function locUsePostcodeLocation() {
     if (postcode) {
       const postcodeLocation = await postcodeCall(postcode)
@@ -84,38 +101,8 @@ export default function NearestStopScreen() {
 
     void effectFunc()
   }, [])
-  useEffect(() => void getNearestStop(), [location, stopsObtained])
-  useEffect(() => void showTrams(), [nearestStop])
 
-  function filterDuplicates(data: DfTData[]): DfTData[] {
-    return data.reduce<DfTData[]>((reducedData, stop) => {
-      const truncAtcoCode = stop.atcoCode.substring(0, stop.atcoCode.length - 1)
-      if (
-        !reducedData.some((discoveredStop) => {
-          return discoveredStop.atcoCode.includes(truncAtcoCode)
-        })
-      ) {
-        reducedData.push(stop)
-      }
-      return reducedData
-    }, [])
-  }
-
-  function filterJson(json: TfGMData): TfGMData {
-    if (!nearestStop) {
-      return []
-    }
-    const usedCodes: string[] = []
-    return json.filter((apiStop) => {
-      if (usedCodes.includes(apiStop.AtcoCode)) {
-        return false
-      }
-      usedCodes.push(apiStop.AtcoCode)
-      return apiStop.AtcoCode.includes(nearestStop.truncatedAtcoCode)
-    })
-  }
-
-  async function getNearestStop() {
+  const getNearestStop = useCallback(async () => {
     if (nearestStop) {
       return
     }
@@ -153,15 +140,13 @@ export default function NearestStopScreen() {
     })
 
     setNearestStop(stopsOrderedByDistance[0])
-  }
+  }, [location, stopsObtained, nearestStop])
 
-  async function showTrams() {
+  const showTrams = useCallback(async () => {
     if (!nearestStop) {
       return
     }
-    if (incomingTrams.length > 0) {
-      return
-    }
+
     const json = await tfgmCall()
     const screenData = filterJson(json.value)
     const stopData = pidDataToStopData(screenData)
@@ -170,6 +155,26 @@ export default function NearestStopScreen() {
     setUpdateTime(
       DateTime.now().setLocale('en-GB').toLocaleString(DateTime.DATETIME_FULL)
     )
+  }, [nearestStop, filterJson])
+
+  useEffect(
+    () => void getNearestStop(),
+    [location, stopsObtained, getNearestStop]
+  )
+  useEffect(() => void showTrams(), [nearestStop, showTrams])
+
+  function filterDuplicates(data: DfTData[]): DfTData[] {
+    return data.reduce<DfTData[]>((reducedData, stop) => {
+      const truncAtcoCode = stop.atcoCode.substring(0, stop.atcoCode.length - 1)
+      if (
+        !reducedData.some((discoveredStop) => {
+          return discoveredStop.atcoCode.includes(truncAtcoCode)
+        })
+      ) {
+        reducedData.push(stop)
+      }
+      return reducedData
+    }, [])
   }
 
   if (errorMsg) {
@@ -227,23 +232,25 @@ export default function NearestStopScreen() {
     )
   }
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{nearestStop.stopName}</Text>
-      <FlatList
-        data={incomingTrams}
-        renderItem={({ item }) => <TramDetailsBox tram={item} />}
-      />
-      <Text style={{ fontSize: 12, textAlign: 'center' }}>
-        Last Updated at {updateTime}
-      </Text>
-      <Button
-        style={styles.button}
-        mode="contained"
-        dark={false}
-        onPress={() => void showTrams()}
-      >
-        Refresh Times
-      </Button>
+    <View style={{ overflow: 'hidden' }}>
+      <View style={styles.container}>
+        <Text style={styles.title}>{nearestStop.stopName}</Text>
+        <FlatList
+          data={incomingTrams}
+          renderItem={({ item }) => <TramDetailsBox tram={item} />}
+        />
+        <Text style={{ fontSize: 12, textAlign: 'center' }}>
+          Last Updated at {updateTime}
+        </Text>
+        <Button
+          style={styles.button}
+          mode="contained"
+          dark={false}
+          onPress={() => void showTrams()}
+        >
+          Refresh Times
+        </Button>
+      </View>
     </View>
   )
 }
@@ -269,6 +276,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffec44',
     borderColor: '#000000',
     borderWidth: 1,
-    overflow: 'hidden',
   },
 })
