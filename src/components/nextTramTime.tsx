@@ -1,7 +1,11 @@
 import { useFonts } from "expo-font";
 import { View, Text, StyleSheet } from 'react-native'
 
-const TramBox = ({ destinationName, dueTime }) => {
+type tramBoxProp = {
+  destinationName: string,
+  dueTime: string
+}
+const TramBox = ({ destinationName, dueTime }: tramBoxProp) => {
   const [loaded] = useFonts({
     VictorMono: require('../../assets/fonts/VictorMono-Regular.ttf'),
     Oswald: require('../../assets/fonts/Oswald-Regular.ttf'),

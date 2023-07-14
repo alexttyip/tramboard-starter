@@ -10,12 +10,13 @@ interface tfgmRawResponse {
 }
 
 export const convertAtcoToStationName = async (atcoCode: string) => {
-  const tfgmRawData = await fetchDataFromtfgmApi()
+  const tfgmRawData = await fetchDataFromtfgmApi('')
   for (const stationBoardEntry of tfgmRawData.value) {
     if (stationBoardEntry.AtcoCode === atcoCode) {
       return stationBoardEntry.StationLocation
     }
   }
+  return "You're in the middle of nowhere"
 }
 
 const tfgmStationData = async (station: string) => {
@@ -26,22 +27,19 @@ const tfgmStationData = async (station: string) => {
 const stationATCOCodeDict: { [index: string]: string[] } = {}
 
 export const atcoToStationCode = async () => {
-  const stationATCOCodeDict: { [index: string]: string } = {}
+  const stationATCOCodeDict: { [index: string]: string[] } = {}
   const link = ''
   const rawData = await fetchDataFromtfgmApi(link)
   // console.log(rawData.value)
   for (const stationBoard of rawData.value) {
     const stationAtco: string = stationBoard.AtcoCode
     if (!Object.keys(stationATCOCodeDict).includes(stationAtco)) {
-      stationATCOCodeDict['18' + stationAtco.slice(2)] = [stationBoard.StationLocation]
+      stationATCOCodeDict['18' + stationAtco.slice(2)] = [
+        stationBoard.StationLocation,
+      ]
     }
   }
   return stationATCOCodeDict
-}
-
-const findStationLocation = (station) => {
-  let stationAtco = stationATCOCodeDict[station]
-  console.log(stationAtco)
 }
 
 export const stationNameListFromtfgmApi = async () => {
@@ -97,8 +95,7 @@ function isDepartureUnique(departureTime: {
   destination: string
   time: string
 }) {
-  const departureString =
-    String(departureTime.destination + departureTime.time)
+  const departureString = String(departureTime.destination + departureTime.time)
   if (!uniqueCheck.includes(departureString)) {
     uniqueCheck.push(departureString)
     return true
@@ -122,7 +119,6 @@ function createDepartureObject(
 }
 
 export default async function (station: string) {
-  console.log(station, 'inside dep file')
   liveDepartures = []
   await stationNameListFromtfgmApi()
   const rawData = await tfgmStationData(station)

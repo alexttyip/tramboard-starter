@@ -21,7 +21,9 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
   const [station, setStation] = useState('')
   const [stationList, setStationList] = useState<string[]>([])
   const [loaded] = useFonts({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     VictorMono: require('../../assets/fonts/VictorMono-Regular.ttf'),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     Oswald: require('../../assets/fonts/Oswald-Regular.ttf'),
   })
   if (!loaded) {
@@ -70,9 +72,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
           <NextTramTime
             dueTime={formatNumber(item.time)}
             destinationName={item.destination}
-          >
-            {' '}
-          </NextTramTime>
+          />
         )}
       />
       {/*<Button*/}

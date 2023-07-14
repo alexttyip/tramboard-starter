@@ -1,4 +1,4 @@
-import { convertAtcoToStationName } from "./departuresFromStation";
+import { convertAtcoToStationName } from './departuresFromStation'
 
 export const getAllStationData = async () => {
   try {
@@ -18,6 +18,7 @@ export const getAllStationData = async () => {
     return await res.text()
   } catch (e) {
     console.log(e)
+    return 'Server down!'
   }
 }
 
@@ -37,7 +38,10 @@ const calculateDistance = (
   return (targetLat - userLat) ** 2 + (targetLng - userLng) ** 2
 }
 
-export const filterStationData = async (userLatitude, userLongitude) => {
+export const filterStationData = async (
+  userLatitude: number,
+  userLongitude: number
+) => {
   const stationData: string = await getAllStationData()
   let stationDataArray = CSVToArray(stationData)
   stationDataArray = stationDataArray.filter((stationData) => {
@@ -45,19 +49,17 @@ export const filterStationData = async (userLatitude, userLongitude) => {
   })
   let minDistance = Infinity
   let minEntry = stationDataArray[0]
-  for (let i of stationDataArray) {
-    let calculatedDistance = calculateDistance(
-      i[30],
-      i[29],
+  for (const stationEntry of stationDataArray) {
+    const calculatedDistance = calculateDistance(
+      Number(stationEntry[30]),
+      Number(stationEntry[29]),
       userLatitude,
       userLongitude
     )
     if (calculatedDistance < minDistance) {
       minDistance = calculatedDistance
-      minEntry = i
+      minEntry = stationEntry
     }
   }
-  console.log('94' + minEntry[0].slice(1,))
-  console.log(await convertAtcoToStationName('94' + minEntry[0].slice(2,)))
-  return await convertAtcoToStationName('94' + minEntry[0].slice(2,))
+  return await convertAtcoToStationName('94' + minEntry[0].slice(2))
 }
