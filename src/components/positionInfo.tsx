@@ -23,7 +23,9 @@ export default function LocationInfo() {
     })()
   }, [])
   const [loaded] = useFonts({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     VictorMono: require('../../assets/fonts/VictorMono-Regular.ttf'),
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     Oswald: require('../../assets/fonts/Oswald-Regular.ttf'),
   })
   if (!loaded) {

@@ -75,16 +75,6 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
           />
         )}
       />
-      {/*<Button*/}
-      {/*  onPress={() => {*/}
-      {/*    void (async () => {*/}
-      {/*      await filterStationData()*/}
-      {/*    })()*/}
-      {/*  }}*/}
-      {/*  style={styles.buttonStyle}*/}
-      {/*>*/}
-      {/*  <Text style={styles.textBold}>Location Finder</Text>*/}
-      {/*</Button>*/}
     </View>
   )
 }
@@ -93,7 +83,6 @@ export default HomeScreen
 
 const styles = StyleSheet.create({
   container: {
-    // fontFamily: 'Avenir',
     flex: 1,
     backgroundColor: '#1a1a1a',
     alignItems: 'center',

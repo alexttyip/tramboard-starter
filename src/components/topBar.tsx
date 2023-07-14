@@ -8,6 +8,7 @@ type TopBarProps = StackHeaderProps
 
 const TopBar = ({ navigation, progress }: TopBarProps) => {
   const [loaded] = useFonts({
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     VictorMono: require('../../assets/fonts/VictorMono-Bold.ttf'),
   })
   if (!loaded) {

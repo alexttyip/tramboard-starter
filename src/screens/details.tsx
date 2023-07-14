@@ -1,14 +1,9 @@
-import React from "react";
+import React from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Text } from 'react-native-paper'
-import LocationInfo from "../components/positionInfo";
-
-type DetailsScreenProp = {
-
-}
+import LocationInfo from '../components/positionInfo'
 
 const DetailsScreen = () => (
-
   <View style={styles.container}>
     <Text>Details Screen</Text>
     <LocationInfo />
