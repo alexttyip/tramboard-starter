@@ -16,13 +16,20 @@
     "@react-navigation/stack": "^6.3.17",
     "babel-plugin-inline-dotenv": "^1.7.0",
     "expo": "~48.0.18",
+    "expo-location": "~15.1.1",
     "expo-status-bar": "~1.4.4",
+    "haversine-distance": "^1.2.1",
+    "luxon": "^3.3.0",
     "react": "18.2.0",
     "react-native": "0.71.8",
-    "react-native-paper": "^5.9.0"
+    "react-native-autocomplete-dropdown": "^3.0.2",
+    "react-native-paper": "^5.9.0",
+    "react-native-paper-dropdown": "^1.0.7",
+    "react-native-svg": "13.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@types/luxon": "^3.3.0",
     "@types/react": "~18.0.14",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "eslint": "^8.43.0",
