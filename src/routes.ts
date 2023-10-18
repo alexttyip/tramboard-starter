@@ -9,4 +9,5 @@ export type ScreenNavigationProps<T extends keyof RootStackParamList> = {
 export type RootStackParamList = {
   Home: undefined
   Details: undefined
+  Times: undefined
 }

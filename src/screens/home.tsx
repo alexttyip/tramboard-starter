@@ -10,6 +10,9 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => (
     <Button mode="contained" onPress={() => navigation.navigate('Details')}>
       Go to details
     </Button>
+    <Button mode="contained" onPress={() => navigation.navigate('Times')}>
+      Go to times
+    </Button>
   </View>
 )
 
